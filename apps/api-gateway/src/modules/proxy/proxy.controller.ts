@@ -62,10 +62,12 @@ export class ProxyController {
   @All(':serviceName/*path')
   async proxyRequest(
     @Param('serviceName') serviceName: string,
-    @Param('path') fullPath: string,
     @Req() req: Request,
     @Res() res: Response,
   ) {
+    // Extract path from req.params which contains array for wildcard
+    const pathParam = (req.params as any).path;
+    const fullPath = Array.isArray(pathParam) ? pathParam.join('/') : pathParam || '';
     return this.handleProxyRequest(serviceName, fullPath, req, res);
   }
 

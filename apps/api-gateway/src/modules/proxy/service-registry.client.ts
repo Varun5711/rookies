@@ -47,13 +47,13 @@ export class ServiceRegistryClient implements OnModuleInit {
     // Query Service Registry
     try {
       const response = await firstValueFrom(
-        this.httpService.get<ServiceInfo>(
+        this.httpService.get<{ success: boolean; service: ServiceInfo }>(
           `${this.registryUrl}/api/registry/services/${serviceName}`,
           { timeout: 5000 },
         ),
       );
 
-      const service = response.data;
+      const service = response.data.service;
 
       // Cache the result
       await this.redisService.set(cacheKey, service, this.CACHE_TTL);
@@ -79,13 +79,13 @@ export class ServiceRegistryClient implements OnModuleInit {
   async getAllServices(): Promise<ServiceInfo[]> {
     try {
       const response = await firstValueFrom(
-        this.httpService.get<ServiceInfo[]>(
+        this.httpService.get<{ success: boolean; services: ServiceInfo[] }>(
           `${this.registryUrl}/api/registry/services`,
           { timeout: 5000 },
         ),
       );
 
-      return response.data;
+      return response.data.services;
     } catch (error: any) {
       this.logger.error(`Failed to fetch all services: ${error.message}`);
       return [];

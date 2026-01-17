@@ -1,0 +1,1701 @@
+{
+    "info": {
+        "name": "Ingenium API - Complete",
+        "description": "Complete API Collection for Ingenium DPI Platform - All microservices endpoints",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "gateway_url",
+            "value": "http://localhost:3000/api"
+        },
+        {
+            "key": "registry_url",
+            "value": "http://localhost:3002/api"
+        }
+    ],
+    "item": [
+        {
+            "name": "Gateway",
+            "item": [
+                {
+                    "name": "Gateway Info",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{gateway_url}}",
+                            "host": [
+                                "{{gateway_url}}"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Gateway Health",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{gateway_url}}/health",
+                            "host": [
+                                "{{gateway_url}}"
+                            ],
+                            "path": [
+                                "health"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Authentication",
+            "item": [
+                {
+                    "name": "Send OTP",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"mobile\": \"+919876543210\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{gateway_url}}/auth/otp/send",
+                            "host": [
+                                "{{gateway_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "otp",
+                                "send"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Verify OTP",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"mobile\": \"+919876543210\",\n  \"otp\": \"123456\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{gateway_url}}/auth/otp/verify",
+                            "host": [
+                                "{{gateway_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "otp",
+                                "verify"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "  var json = pm.response.json();",
+                                    "  if (json.data && json.data.tokens) {",
+                                    "    pm.environment.set('access_token', json.data.tokens.accessToken);",
+                                    "    pm.environment.set('refresh_token', json.data.tokens.refreshToken);",
+                                    "  }",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Google Login",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{gateway_url}}/auth/google/login",
+                            "host": [
+                                "{{gateway_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "google",
+                                "login"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Refresh Token",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"refreshToken\": \"{{refresh_token}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{gateway_url}}/auth/tokens/refresh",
+                            "host": [
+                                "{{gateway_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "tokens",
+                                "refresh"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "  var json = pm.response.json();",
+                                    "  if (json.data && json.data.tokens) {",
+                                    "    pm.environment.set('access_token', json.data.tokens.accessToken);",
+                                    "    pm.environment.set('refresh_token', json.data.tokens.refreshToken);",
+                                    "  }",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Logout",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"refreshToken\": \"{{refresh_token}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{gateway_url}}/auth/tokens/logout",
+                            "host": [
+                                "{{gateway_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "tokens",
+                                "logout"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Service Registry",
+            "item": [
+                {
+                    "name": "Register Service",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"healthcare\",\n  \"displayName\": \"Healthcare Services\",\n  \"description\": \"Hospital and appointment management\",\n  \"baseUrl\": \"http://localhost:3010\",\n  \"healthEndpoint\": \"/api/health\",\n  \"version\": \"1.0.0\",\n  \"owner\": \"health-ministry\",\n  \"tags\": [\"healthcare\", \"hospitals\"],\n  \"isPublic\": false,\n  \"requiredRoles\": [\"citizen\"]\n}"
+                        },
+                        "url": {
+                            "raw": "{{registry_url}}/registry/services",
+                            "host": [
+                                "{{registry_url}}"
+                            ],
+                            "path": [
+                                "registry",
+                                "services"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "List Services",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{registry_url}}/registry/services",
+                            "host": [
+                                "{{registry_url}}"
+                            ],
+                            "path": [
+                                "registry",
+                                "services"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Service by Name",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{registry_url}}/registry/services/:name",
+                            "host": [
+                                "{{registry_url}}"
+                            ],
+                            "path": [
+                                "registry",
+                                "services",
+                                ":name"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "name",
+                                    "value": "healthcare"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Update Service",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"description\": \"Updated description\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{registry_url}}/registry/services/:name",
+                            "host": [
+                                "{{registry_url}}"
+                            ],
+                            "path": [
+                                "registry",
+                                "services",
+                                ":name"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "name",
+                                    "value": "healthcare"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Platform Health",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{registry_url}}/registry/health",
+                            "host": [
+                                "{{registry_url}}"
+                            ],
+                            "path": [
+                                "registry",
+                                "health"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Delete Service",
+                    "request": {
+                        "method": "DELETE",
+                        "url": {
+                            "raw": "{{registry_url}}/registry/services/:name",
+                            "host": [
+                                "{{registry_url}}"
+                            ],
+                            "path": [
+                                "registry",
+                                "services",
+                                ":name"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "name",
+                                    "value": "test-service"
+                                }
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Healthcare Service",
+            "item": [
+                {
+                    "name": "Health Check",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{gateway_url}}/services/healthcare/health",
+                            "host": [
+                                "{{gateway_url}}"
+                            ],
+                            "path": [
+                                "services",
+                                "healthcare",
+                                "health"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Hospitals",
+                    "item": [
+                        {
+                            "name": "List Hospitals",
+                            "request": {
+                                "method": "GET",
+                                "url": {
+                                    "raw": "{{gateway_url}}/services/healthcare/hospitals?page=1&limit=10",
+                                    "host": [
+                                        "{{gateway_url}}"
+                                    ],
+                                    "path": [
+                                        "services",
+                                        "healthcare",
+                                        "hospitals"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "page",
+                                            "value": "1"
+                                        },
+                                        {
+                                            "key": "limit",
+                                            "value": "10"
+                                        },
+                                        {
+                                            "key": "city",
+                                            "value": "",
+                                            "disabled": true
+                                        },
+                                        {
+                                            "key": "state",
+                                            "value": "",
+                                            "disabled": true
+                                        },
+                                        {
+                                            "key": "type",
+                                            "value": "",
+                                            "disabled": true
+                                        }
+                                    ]
+                                }
+                            },
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "var json = pm.response.json();",
+                                            "if (json.data && json.data.length > 0) {",
+                                            "  pm.environment.set('hospital_id', json.data[0].id);",
+                                            "}"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Get Hospital",
+                            "request": {
+                                "method": "GET",
+                                "url": {
+                                    "raw": "{{gateway_url}}/services/healthcare/hospitals/{{hospital_id}}",
+                                    "host": [
+                                        "{{gateway_url}}"
+                                    ],
+                                    "path": [
+                                        "services",
+                                        "healthcare",
+                                        "hospitals",
+                                        "{{hospital_id}}"
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "Create Hospital",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{access_token}}"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"name\": \"City General Hospital\",\n  \"description\": \"Multi-specialty government hospital\",\n  \"city\": \"Bangalore\",\n  \"state\": \"Karnataka\",\n  \"pincode\": \"560001\",\n  \"address\": \"MG Road, Bangalore\",\n  \"facilities\": [\"Emergency\", \"ICU\", \"Pharmacy\", \"Lab\"],\n  \"type\": \"government\",\n  \"contactNumber\": \"+91-80-12345678\",\n  \"email\": \"info@citygeneral.gov.in\",\n  \"isActive\": true,\n  \"totalBeds\": 500,\n  \"availableBeds\": 120\n}"
+                                },
+                                "url": {
+                                    "raw": "{{gateway_url}}/services/healthcare/hospitals",
+                                    "host": [
+                                        "{{gateway_url}}"
+                                    ],
+                                    "path": [
+                                        "services",
+                                        "healthcare",
+                                        "hospitals"
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "Update Hospital",
+                            "request": {
+                                "method": "PUT",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{access_token}}"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"availableBeds\": 115\n}"
+                                },
+                                "url": {
+                                    "raw": "{{gateway_url}}/services/healthcare/hospitals/{{hospital_id}}",
+                                    "host": [
+                                        "{{gateway_url}}"
+                                    ],
+                                    "path": [
+                                        "services",
+                                        "healthcare",
+                                        "hospitals",
+                                        "{{hospital_id}}"
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "Delete Hospital",
+                            "request": {
+                                "method": "DELETE",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{access_token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{gateway_url}}/services/healthcare/hospitals/{{hospital_id}}",
+                                    "host": [
+                                        "{{gateway_url}}"
+                                    ],
+                                    "path": [
+                                        "services",
+                                        "healthcare",
+                                        "hospitals",
+                                        "{{hospital_id}}"
+                                    ]
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Doctors",
+                    "item": [
+                        {
+                            "name": "List Doctors",
+                            "request": {
+                                "method": "GET",
+                                "url": {
+                                    "raw": "{{gateway_url}}/services/healthcare/doctors?page=1&limit=10",
+                                    "host": [
+                                        "{{gateway_url}}"
+                                    ],
+                                    "path": [
+                                        "services",
+                                        "healthcare",
+                                        "doctors"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "page",
+                                            "value": "1"
+                                        },
+                                        {
+                                            "key": "limit",
+                                            "value": "10"
+                                        },
+                                        {
+                                            "key": "specialization",
+                                            "value": "",
+                                            "disabled": true
+                                        },
+                                        {
+                                            "key": "hospitalId",
+                                            "value": "",
+                                            "disabled": true
+                                        }
+                                    ]
+                                }
+                            },
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "var json = pm.response.json();",
+                                            "if (json.data && json.data.length > 0) {",
+                                            "  pm.environment.set('doctor_id', json.data[0].id);",
+                                            "}"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Get Doctor",
+                            "request": {
+                                "method": "GET",
+                                "url": {
+                                    "raw": "{{gateway_url}}/services/healthcare/doctors/{{doctor_id}}",
+                                    "host": [
+                                        "{{gateway_url}}"
+                                    ],
+                                    "path": [
+                                        "services",
+                                        "healthcare",
+                                        "doctors",
+                                        "{{doctor_id}}"
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "Create Doctor",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{access_token}}"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"name\": \"Dr. Sharma\",\n  \"specialization\": \"cardiology\",\n  \"qualification\": \"MBBS, MD, DM (Cardiology)\",\n  \"experienceYears\": 15,\n  \"registrationNumber\": \"KMC-12345\",\n  \"contactNumber\": \"+91-9876543210\",\n  \"email\": \"dr.sharma@hospital.gov.in\",\n  \"consultationFee\": 500,\n  \"isAvailable\": true,\n  \"hospitalId\": \"{{hospital_id}}\"\n}"
+                                },
+                                "url": {
+                                    "raw": "{{gateway_url}}/services/healthcare/doctors",
+                                    "host": [
+                                        "{{gateway_url}}"
+                                    ],
+                                    "path": [
+                                        "services",
+                                        "healthcare",
+                                        "doctors"
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "Update Doctor",
+                            "request": {
+                                "method": "PUT",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{access_token}}"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"consultationFee\": 600\n}"
+                                },
+                                "url": {
+                                    "raw": "{{gateway_url}}/services/healthcare/doctors/{{doctor_id}}",
+                                    "host": [
+                                        "{{gateway_url}}"
+                                    ],
+                                    "path": [
+                                        "services",
+                                        "healthcare",
+                                        "doctors",
+                                        "{{doctor_id}}"
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "Delete Doctor",
+                            "request": {
+                                "method": "DELETE",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{access_token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{gateway_url}}/services/healthcare/doctors/{{doctor_id}}",
+                                    "host": [
+                                        "{{gateway_url}}"
+                                    ],
+                                    "path": [
+                                        "services",
+                                        "healthcare",
+                                        "doctors",
+                                        "{{doctor_id}}"
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "Get Doctor Slots",
+                            "request": {
+                                "method": "GET",
+                                "url": {
+                                    "raw": "{{gateway_url}}/services/healthcare/doctors/{{doctor_id}}/slots",
+                                    "host": [
+                                        "{{gateway_url}}"
+                                    ],
+                                    "path": [
+                                        "services",
+                                        "healthcare",
+                                        "doctors",
+                                        "{{doctor_id}}",
+                                        "slots"
+                                    ]
+                                }
+                            },
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "var json = pm.response.json();",
+                                            "if (json && json.length > 0) {",
+                                            "  pm.environment.set('slot_id', json[0].id);",
+                                            "}"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Create Time Slot",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{access_token}}"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"dayOfWeek\": \"monday\",\n  \"startTime\": \"09:00\",\n  \"endTime\": \"13:00\",\n  \"slotDurationMinutes\": 15,\n  \"maxPatients\": 20,\n  \"isAvailable\": true\n}"
+                                },
+                                "url": {
+                                    "raw": "{{gateway_url}}/services/healthcare/doctors/{{doctor_id}}/slots",
+                                    "host": [
+                                        "{{gateway_url}}"
+                                    ],
+                                    "path": [
+                                        "services",
+                                        "healthcare",
+                                        "doctors",
+                                        "{{doctor_id}}",
+                                        "slots"
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "Update Time Slot",
+                            "request": {
+                                "method": "PUT",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{access_token}}"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"isAvailable\": false\n}"
+                                },
+                                "url": {
+                                    "raw": "{{gateway_url}}/services/healthcare/doctors/slots/{{slot_id}}",
+                                    "host": [
+                                        "{{gateway_url}}"
+                                    ],
+                                    "path": [
+                                        "services",
+                                        "healthcare",
+                                        "doctors",
+                                        "slots",
+                                        "{{slot_id}}"
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "Delete Time Slot",
+                            "request": {
+                                "method": "DELETE",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{access_token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{gateway_url}}/services/healthcare/doctors/slots/{{slot_id}}",
+                                    "host": [
+                                        "{{gateway_url}}"
+                                    ],
+                                    "path": [
+                                        "services",
+                                        "healthcare",
+                                        "doctors",
+                                        "slots",
+                                        "{{slot_id}}"
+                                    ]
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Appointments",
+                    "item": [
+                        {
+                            "name": "List Appointments",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{access_token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{gateway_url}}/services/healthcare/appointments?page=1&limit=10",
+                                    "host": [
+                                        "{{gateway_url}}"
+                                    ],
+                                    "path": [
+                                        "services",
+                                        "healthcare",
+                                        "appointments"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "page",
+                                            "value": "1"
+                                        },
+                                        {
+                                            "key": "limit",
+                                            "value": "10"
+                                        },
+                                        {
+                                            "key": "status",
+                                            "value": "",
+                                            "disabled": true
+                                        },
+                                        {
+                                            "key": "doctorId",
+                                            "value": "",
+                                            "disabled": true
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "My Appointments",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{access_token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{gateway_url}}/services/healthcare/appointments/me",
+                                    "host": [
+                                        "{{gateway_url}}"
+                                    ],
+                                    "path": [
+                                        "services",
+                                        "healthcare",
+                                        "appointments",
+                                        "me"
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "Get Appointment",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{access_token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{gateway_url}}/services/healthcare/appointments/{{appointment_id}}",
+                                    "host": [
+                                        "{{gateway_url}}"
+                                    ],
+                                    "path": [
+                                        "services",
+                                        "healthcare",
+                                        "appointments",
+                                        "{{appointment_id}}"
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "Book Appointment",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{access_token}}"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"doctorId\": \"{{doctor_id}}\",\n  \"hospitalId\": \"{{hospital_id}}\",\n  \"appointmentDate\": \"2026-02-15\",\n  \"appointmentTime\": \"10:30\",\n  \"patientName\": \"John Doe\",\n  \"patientMobile\": \"+919876543210\",\n  \"symptoms\": \"Headache and fever for 3 days\",\n  \"notes\": \"Previous history of migraine\"\n}"
+                                },
+                                "url": {
+                                    "raw": "{{gateway_url}}/services/healthcare/appointments",
+                                    "host": [
+                                        "{{gateway_url}}"
+                                    ],
+                                    "path": [
+                                        "services",
+                                        "healthcare",
+                                        "appointments"
+                                    ]
+                                }
+                            },
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "var json = pm.response.json();",
+                                            "if (json && json.id) {",
+                                            "  pm.environment.set('appointment_id', json.id);",
+                                            "}"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Cancel Appointment",
+                            "request": {
+                                "method": "PUT",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{access_token}}"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"reason\": \"Schedule conflict\"\n}"
+                                },
+                                "url": {
+                                    "raw": "{{gateway_url}}/services/healthcare/appointments/{{appointment_id}}/cancel",
+                                    "host": [
+                                        "{{gateway_url}}"
+                                    ],
+                                    "path": [
+                                        "services",
+                                        "healthcare",
+                                        "appointments",
+                                        "{{appointment_id}}",
+                                        "cancel"
+                                    ]
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Agriculture Service",
+            "item": [
+                {
+                    "name": "Health Check",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{gateway_url}}/services/agriculture/health",
+                            "host": [
+                                "{{gateway_url}}"
+                            ],
+                            "path": [
+                                "services",
+                                "agriculture",
+                                "health"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Advisories",
+                    "item": [
+                        {
+                            "name": "List Advisories",
+                            "request": {
+                                "method": "GET",
+                                "url": {
+                                    "raw": "{{gateway_url}}/services/agriculture/advisories?page=1&limit=10",
+                                    "host": [
+                                        "{{gateway_url}}"
+                                    ],
+                                    "path": [
+                                        "services",
+                                        "agriculture",
+                                        "advisories"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "page",
+                                            "value": "1"
+                                        },
+                                        {
+                                            "key": "limit",
+                                            "value": "10"
+                                        },
+                                        {
+                                            "key": "state",
+                                            "value": "",
+                                            "disabled": true
+                                        },
+                                        {
+                                            "key": "season",
+                                            "value": "",
+                                            "disabled": true
+                                        },
+                                        {
+                                            "key": "category",
+                                            "value": "",
+                                            "disabled": true
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "Get Advisory",
+                            "request": {
+                                "method": "GET",
+                                "url": {
+                                    "raw": "{{gateway_url}}/services/agriculture/advisories/:id",
+                                    "host": [
+                                        "{{gateway_url}}"
+                                    ],
+                                    "path": [
+                                        "services",
+                                        "agriculture",
+                                        "advisories",
+                                        ":id"
+                                    ],
+                                    "variable": [
+                                        {
+                                            "key": "id",
+                                            "value": "advisory-uuid"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Schemes",
+                    "item": [
+                        {
+                            "name": "List Schemes",
+                            "request": {
+                                "method": "GET",
+                                "url": {
+                                    "raw": "{{gateway_url}}/services/agriculture/schemes?page=1&limit=10",
+                                    "host": [
+                                        "{{gateway_url}}"
+                                    ],
+                                    "path": [
+                                        "services",
+                                        "agriculture",
+                                        "schemes"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "page",
+                                            "value": "1"
+                                        },
+                                        {
+                                            "key": "limit",
+                                            "value": "10"
+                                        },
+                                        {
+                                            "key": "category",
+                                            "value": "",
+                                            "disabled": true
+                                        }
+                                    ]
+                                }
+                            },
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "var json = pm.response.json();",
+                                            "if (json.data && json.data.length > 0) {",
+                                            "  pm.environment.set('scheme_id', json.data[0].id);",
+                                            "}"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Get Scheme",
+                            "request": {
+                                "method": "GET",
+                                "url": {
+                                    "raw": "{{gateway_url}}/services/agriculture/schemes/{{scheme_id}}",
+                                    "host": [
+                                        "{{gateway_url}}"
+                                    ],
+                                    "path": [
+                                        "services",
+                                        "agriculture",
+                                        "schemes",
+                                        "{{scheme_id}}"
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "Apply for Scheme",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{access_token}}"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"applicantName\": \"Ramesh Kumar\",\n  \"applicantMobile\": \"+919876543210\",\n  \"applicantAadhar\": \"1234-5678-9012\",\n  \"formData\": {\n    \"landSize\": \"2.5 acres\",\n    \"village\": \"Hoskote\",\n    \"district\": \"Bangalore Rural\",\n    \"state\": \"Karnataka\"\n  },\n  \"documentUrls\": [\n    \"https://storage.example.com/docs/aadhaar.pdf\"\n  ]\n}"
+                                },
+                                "url": {
+                                    "raw": "{{gateway_url}}/services/agriculture/schemes/{{scheme_id}}/apply",
+                                    "host": [
+                                        "{{gateway_url}}"
+                                    ],
+                                    "path": [
+                                        "services",
+                                        "agriculture",
+                                        "schemes",
+                                        "{{scheme_id}}",
+                                        "apply"
+                                    ]
+                                }
+                            },
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "var json = pm.response.json();",
+                                            "if (json && json.id) {",
+                                            "  pm.environment.set('application_id', json.id);",
+                                            "}"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "name": "My Applications",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{access_token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{gateway_url}}/services/agriculture/schemes/me/applications",
+                                    "host": [
+                                        "{{gateway_url}}"
+                                    ],
+                                    "path": [
+                                        "services",
+                                        "agriculture",
+                                        "schemes",
+                                        "me",
+                                        "applications"
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "Get Application Status",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{access_token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{gateway_url}}/services/agriculture/schemes/applications/{{application_id}}",
+                                    "host": [
+                                        "{{gateway_url}}"
+                                    ],
+                                    "path": [
+                                        "services",
+                                        "agriculture",
+                                        "schemes",
+                                        "applications",
+                                        "{{application_id}}"
+                                    ]
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Market Prices",
+                    "item": [
+                        {
+                            "name": "List Prices",
+                            "request": {
+                                "method": "GET",
+                                "url": {
+                                    "raw": "{{gateway_url}}/services/agriculture/market-prices?page=1&limit=10",
+                                    "host": [
+                                        "{{gateway_url}}"
+                                    ],
+                                    "path": [
+                                        "services",
+                                        "agriculture",
+                                        "market-prices"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "page",
+                                            "value": "1"
+                                        },
+                                        {
+                                            "key": "limit",
+                                            "value": "10"
+                                        },
+                                        {
+                                            "key": "commodity",
+                                            "value": "",
+                                            "disabled": true
+                                        },
+                                        {
+                                            "key": "state",
+                                            "value": "",
+                                            "disabled": true
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "Get Price",
+                            "request": {
+                                "method": "GET",
+                                "url": {
+                                    "raw": "{{gateway_url}}/services/agriculture/market-prices/:id",
+                                    "host": [
+                                        "{{gateway_url}}"
+                                    ],
+                                    "path": [
+                                        "services",
+                                        "agriculture",
+                                        "market-prices",
+                                        ":id"
+                                    ],
+                                    "variable": [
+                                        {
+                                            "key": "id",
+                                            "value": "price-uuid"
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "List Commodities",
+                            "request": {
+                                "method": "GET",
+                                "url": {
+                                    "raw": "{{gateway_url}}/services/agriculture/market-prices/commodities",
+                                    "host": [
+                                        "{{gateway_url}}"
+                                    ],
+                                    "path": [
+                                        "services",
+                                        "agriculture",
+                                        "market-prices",
+                                        "commodities"
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "List Mandis",
+                            "request": {
+                                "method": "GET",
+                                "url": {
+                                    "raw": "{{gateway_url}}/services/agriculture/market-prices/mandis",
+                                    "host": [
+                                        "{{gateway_url}}"
+                                    ],
+                                    "path": [
+                                        "services",
+                                        "agriculture",
+                                        "market-prices",
+                                        "mandis"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "state",
+                                            "value": "",
+                                            "disabled": true
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Urban Service",
+            "item": [
+                {
+                    "name": "Health Check",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{gateway_url}}/services/urban/health",
+                            "host": [
+                                "{{gateway_url}}"
+                            ],
+                            "path": [
+                                "services",
+                                "urban",
+                                "health"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Categories",
+                    "item": [
+                        {
+                            "name": "List Categories",
+                            "request": {
+                                "method": "GET",
+                                "url": {
+                                    "raw": "{{gateway_url}}/services/urban/categories",
+                                    "host": [
+                                        "{{gateway_url}}"
+                                    ],
+                                    "path": [
+                                        "services",
+                                        "urban",
+                                        "categories"
+                                    ]
+                                }
+                            },
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "var json = pm.response.json();",
+                                            "if (json && json.length > 0) {",
+                                            "  pm.environment.set('category_id', json[0].id);",
+                                            "}"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Get Category",
+                            "request": {
+                                "method": "GET",
+                                "url": {
+                                    "raw": "{{gateway_url}}/services/urban/categories/{{category_id}}",
+                                    "host": [
+                                        "{{gateway_url}}"
+                                    ],
+                                    "path": [
+                                        "services",
+                                        "urban",
+                                        "categories",
+                                        "{{category_id}}"
+                                    ]
+                                }
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Grievances",
+                    "item": [
+                        {
+                            "name": "List Grievances",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{access_token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{gateway_url}}/services/urban/grievances?page=1&limit=10",
+                                    "host": [
+                                        "{{gateway_url}}"
+                                    ],
+                                    "path": [
+                                        "services",
+                                        "urban",
+                                        "grievances"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "page",
+                                            "value": "1"
+                                        },
+                                        {
+                                            "key": "limit",
+                                            "value": "10"
+                                        },
+                                        {
+                                            "key": "status",
+                                            "value": "",
+                                            "disabled": true
+                                        },
+                                        {
+                                            "key": "priority",
+                                            "value": "",
+                                            "disabled": true
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "My Grievances",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{access_token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{gateway_url}}/services/urban/grievances/me",
+                                    "host": [
+                                        "{{gateway_url}}"
+                                    ],
+                                    "path": [
+                                        "services",
+                                        "urban",
+                                        "grievances",
+                                        "me"
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "Get Grievance",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{access_token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{gateway_url}}/services/urban/grievances/{{grievance_id}}",
+                                    "host": [
+                                        "{{gateway_url}}"
+                                    ],
+                                    "path": [
+                                        "services",
+                                        "urban",
+                                        "grievances",
+                                        "{{grievance_id}}"
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "Submit Grievance",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{access_token}}"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"categoryId\": \"{{category_id}}\",\n  \"title\": \"Large pothole on MG Road\",\n  \"description\": \"There is a large pothole near City Mall junction causing accidents.\",\n  \"complainantName\": \"Suresh Kumar\",\n  \"complainantMobile\": \"+919876543210\",\n  \"complainantEmail\": \"suresh@example.com\",\n  \"location\": \"MG Road, near City Mall\",\n  \"address\": \"MG Road, Opposite City Mall, Bangalore\",\n  \"ward\": \"Ward 12\",\n  \"pincode\": \"560001\",\n  \"latitude\": 12.9716,\n  \"longitude\": 77.5946,\n  \"priority\": \"high\",\n  \"attachments\": [\n    \"https://storage.example.com/images/pothole1.jpg\"\n  ]\n}"
+                                },
+                                "url": {
+                                    "raw": "{{gateway_url}}/services/urban/grievances",
+                                    "host": [
+                                        "{{gateway_url}}"
+                                    ],
+                                    "path": [
+                                        "services",
+                                        "urban",
+                                        "grievances"
+                                    ]
+                                }
+                            },
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "var json = pm.response.json();",
+                                            "if (json && json.id) {",
+                                            "  pm.environment.set('grievance_id', json.id);",
+                                            "}"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "name": "Get Status",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{access_token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{gateway_url}}/services/urban/grievances/{{grievance_id}}/status",
+                                    "host": [
+                                        "{{gateway_url}}"
+                                    ],
+                                    "path": [
+                                        "services",
+                                        "urban",
+                                        "grievances",
+                                        "{{grievance_id}}",
+                                        "status"
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "name": "Escalate Grievance",
+                            "request": {
+                                "method": "PUT",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{access_token}}"
+                                    },
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"reason\": \"No action taken for 7 days\"\n}"
+                                },
+                                "url": {
+                                    "raw": "{{gateway_url}}/services/urban/grievances/{{grievance_id}}/escalate",
+                                    "host": [
+                                        "{{gateway_url}}"
+                                    ],
+                                    "path": [
+                                        "services",
+                                        "urban",
+                                        "grievances",
+                                        "{{grievance_id}}",
+                                        "escalate"
+                                    ]
+                                }
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Dynamic Service Demo",
+            "item": [
+                {
+                    "name": "Register Education Service",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"education\",\n  \"displayName\": \"Education Services\",\n  \"description\": \"Course catalog, enrollment, certificates\",\n  \"baseUrl\": \"http://localhost:3013\",\n  \"healthEndpoint\": \"/api/health\",\n  \"version\": \"1.0.0\",\n  \"owner\": \"education-ministry\",\n  \"tags\": [\"education\", \"courses\"],\n  \"isPublic\": false,\n  \"requiredRoles\": [\"citizen\"]\n}"
+                        },
+                        "url": {
+                            "raw": "{{registry_url}}/registry/services",
+                            "host": [
+                                "{{registry_url}}"
+                            ],
+                            "path": [
+                                "registry",
+                                "services"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Access Education via Gateway",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{gateway_url}}/services/education/courses",
+                            "host": [
+                                "{{gateway_url}}"
+                            ],
+                            "path": [
+                                "services",
+                                "education",
+                                "courses"
+                            ]
+                        }
+                    }
+                }
+            ]
+        }
+    ]
+}

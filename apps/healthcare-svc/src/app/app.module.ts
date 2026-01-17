@@ -10,6 +10,7 @@ import { HospitalsModule } from '../modules/hospitals/hospitals.module';
 import { DoctorsModule } from '../modules/doctors/doctors.module';
 import { AppointmentsModule } from '../modules/appointments/appointments.module';
 import { HealthModule } from '../modules/health/health.module';
+import { AuthModule } from '../modules/auth/auth.module';
 
 /**
  * Healthcare Service Module
@@ -26,7 +27,7 @@ import { HealthModule } from '../modules/health/health.module';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    DatabaseModule.forRoot(),
+    DatabaseModule.forRoot({ serviceName: 'HEALTHCARE' }),
     RedisModule.forRootAsync({
       useFactory: (configService: ConfigService) => ({
         host: configService.get('REDIS_HOST', 'localhost'),
@@ -48,6 +49,7 @@ import { HealthModule } from '../modules/health/health.module';
       }),
       inject: [ConfigService],
     }),
+    AuthModule,
     HospitalsModule,
     DoctorsModule,
     AppointmentsModule,
