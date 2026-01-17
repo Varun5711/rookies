@@ -5,6 +5,15 @@ import { AuditModule } from '../modules/audit/audit.module';
 import { AuditConsumer } from '../modules/consumers/audit.consumer';
 import { HealthModule } from '../modules/health/health.module';
 
+/**
+ * Audit Service Module
+ * Platform service for audit logging and compliance
+ *
+ * Features:
+ * - Event logging
+ * - Audit trail
+ * - Compliance reporting
+ */
 @Module({
   imports: [
     ConfigModule.forRoot({

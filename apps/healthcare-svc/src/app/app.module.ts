@@ -11,6 +11,16 @@ import { DoctorsModule } from '../modules/doctors/doctors.module';
 import { AppointmentsModule } from '../modules/appointments/appointments.module';
 import { HealthModule } from '../modules/health/health.module';
 
+/**
+ * Healthcare Service Module
+ * Domain service for healthcare operations
+ *
+ * Features:
+ * - Hospital management
+ * - Doctor directory
+ * - Appointment booking
+ * - Time slot management
+ */
 @Module({
   imports: [
     ConfigModule.forRoot({

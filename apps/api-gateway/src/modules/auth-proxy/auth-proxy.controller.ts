@@ -1,4 +1,4 @@
-import { Controller, All, Req, Res, Logger } from '@nestjs/common';
+import { Controller, All, Param, Req, Res, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { Request, Response } from 'express';
 import { firstValueFrom } from 'rxjs';
@@ -57,13 +57,16 @@ export class AuthProxyController {
    * Public endpoint - authentication not required
    */
   @Public()
-  @All('*')
-  async proxyAuthRequest(@Req() req: Request, @Res() res: Response) {
+  @All('*path')
+  async proxyAuthRequest(
+    @Param('path') path: string,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
     const correlationId = (req.headers['x-correlation-id'] as string) || '';
 
-    // Extract path after /api/auth
-    const path = req.params[0] || '';
-    const targetUrl = this.buildTargetUrl(path, req.query);
+    // Use the path parameter from the route
+    const targetUrl = this.buildTargetUrl(path || '', req.query);
 
     this.logger.debug(
       `[${correlationId}] Auth proxy: ${req.method} /auth/${path} -> ${targetUrl}`,

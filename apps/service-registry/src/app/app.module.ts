@@ -25,8 +25,8 @@ import { RegistryModule } from '../modules/registry/registry.module';
       envFilePath: '.env',
     }),
 
-    // Database
-    DatabaseModule.forRoot(),
+    // Database (connects to ingenium_registry)
+    DatabaseModule.forRoot({ serviceName: 'REGISTRY' }),
 
     // Redis for caching service metadata
     RedisModule.register({

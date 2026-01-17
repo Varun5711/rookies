@@ -59,14 +59,13 @@ export class ProxyController {
   /**
    * Handle requests to /api/services/:serviceName/*
    */
-  @All(':serviceName/*')
+  @All(':serviceName/*path')
   async proxyRequest(
     @Param('serviceName') serviceName: string,
+    @Param('path') fullPath: string,
     @Req() req: Request,
     @Res() res: Response,
   ) {
-    // Extract the path after the service name
-    const fullPath = req.params[0] || '';
     return this.handleProxyRequest(serviceName, fullPath, req, res);
   }
 

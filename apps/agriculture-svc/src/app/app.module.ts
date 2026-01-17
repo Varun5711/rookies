@@ -11,6 +11,15 @@ import { SchemesModule } from '../modules/schemes/schemes.module';
 import { MarketPricesModule } from '../modules/market-prices/market-prices.module';
 import { HealthModule } from '../modules/health/health.module';
 
+/**
+ * Agriculture Service Module
+ * Domain service for agriculture operations
+ *
+ * Features:
+ * - Crop advisories
+ * - Scheme management and applications
+ * - Market price tracking
+ */
 @Module({
   imports: [
     ConfigModule.forRoot({

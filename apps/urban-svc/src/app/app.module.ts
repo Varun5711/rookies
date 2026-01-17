@@ -10,6 +10,15 @@ import { CategoriesModule } from '../modules/categories/categories.module';
 import { GrievancesModule } from '../modules/grievances/grievances.module';
 import { HealthModule } from '../modules/health/health.module';
 
+/**
+ * Urban Service Module
+ * Domain service for urban governance operations
+ *
+ * Features:
+ * - Grievance management
+ * - Category management
+ * - Status tracking
+ */
 @Module({
   imports: [
     ConfigModule.forRoot({
