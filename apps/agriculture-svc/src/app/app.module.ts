@@ -10,6 +10,7 @@ import { AdvisoriesModule } from '../modules/advisories/advisories.module';
 import { SchemesModule } from '../modules/schemes/schemes.module';
 import { MarketPricesModule } from '../modules/market-prices/market-prices.module';
 import { HealthModule } from '../modules/health/health.module';
+import { AuthModule } from '../modules/auth/auth.module';
 
 /**
  * Agriculture Service Module
@@ -25,7 +26,7 @@ import { HealthModule } from '../modules/health/health.module';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    DatabaseModule.forRoot(),
+    DatabaseModule.forRoot({ serviceName: 'AGRICULTURE' }),
     RedisModule.forRootAsync({
       useFactory: (configService: ConfigService) => ({
         host: configService.get('REDIS_HOST', 'localhost'),
@@ -47,6 +48,7 @@ import { HealthModule } from '../modules/health/health.module';
       }),
       inject: [ConfigService],
     }),
+    AuthModule,
     AdvisoriesModule,
     SchemesModule,
     MarketPricesModule,

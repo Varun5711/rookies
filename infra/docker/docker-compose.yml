@@ -103,10 +103,36 @@ services:
     networks:
       - ingenium-network
 
+  # ClickHouse - Analytical Database for Audit Logs
+  clickhouse:
+    image: clickhouse/clickhouse-server:23.8-alpine
+    container_name: ingenium-clickhouse
+    restart: always
+    ports:
+      - '8123:8123'  # HTTP interface
+      - '9000:9000'  # Native protocol
+    environment:
+      CLICKHOUSE_DB: ${CLICKHOUSE_DB:-ingenium_audit}
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-default}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-clickhouse}
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - ./init-scripts/clickhouse:/docker-entrypoint-initdb.d
+    networks:
+      - ingenium-network
+    healthcheck:
+      test: ["CMD", "clickhouse-client", "--query", "SELECT 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 volumes:
   postgres_data:
     driver: local
   redis_data:
+    driver: local
+  clickhouse_data:
     driver: local
 
 networks:
