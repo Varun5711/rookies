@@ -1,0 +1,18 @@
+{
+  "name": "@dpi/redis",
+  "version": "1.0.0",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "description": "Shared Redis module for DPI microservices",
+  "exports": {
+    ".": {
+      "@dpi/source": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "peerDependencies": {
+    "@nestjs/common": "^10.0.0",
+    "@nestjs/microservices": "^10.0.0",
+    "ioredis": "^5.0.0"
+  }
+}

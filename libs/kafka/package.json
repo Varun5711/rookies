@@ -1,0 +1,18 @@
+{
+  "name": "@dpi/kafka",
+  "version": "1.0.0",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "description": "Shared Kafka module for DPI microservices",
+  "exports": {
+    ".": {
+      "@dpi/source": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "peerDependencies": {
+    "@nestjs/common": "^10.0.0",
+    "@nestjs/microservices": "^10.0.0",
+    "kafkajs": "^2.0.0"
+  }
+}

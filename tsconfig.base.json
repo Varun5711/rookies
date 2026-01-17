@@ -14,7 +14,10 @@
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
-    "paths": {}
+    "paths": {
+      "@dpi/kafka": ["libs/kafka/src/index.ts"],
+      "@dpi/redis": ["libs/redis/src/index.ts"]
+    }
   },
   "exclude": ["node_modules", "tmp"]
 }
