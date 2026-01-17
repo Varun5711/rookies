@@ -12,13 +12,14 @@ import {
 import { HospitalsService } from './hospitals.service';
 import { CreateHospitalDto } from './dto/create-hospital.dto';
 import { QueryHospitalDto } from './dto/query-hospital.dto';
-import { Public } from '@dpi/common';
+import { Public, Roles, UserRole } from '@dpi/common';
 
 @Controller('hospitals')
 export class HospitalsController {
   constructor(private readonly hospitalsService: HospitalsService) {}
 
   @Post()
+  @Roles(UserRole.DEPARTMENT_ADMIN, UserRole.PLATFORM_ADMIN)
   create(@Body() createHospitalDto: CreateHospitalDto) {
     return this.hospitalsService.create(createHospitalDto);
   }
@@ -36,6 +37,7 @@ export class HospitalsController {
   }
 
   @Put(':id')
+  @Roles(UserRole.DEPARTMENT_ADMIN, UserRole.PLATFORM_ADMIN)
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateDto: Partial<CreateHospitalDto>,
@@ -44,6 +46,7 @@ export class HospitalsController {
   }
 
   @Delete(':id')
+  @Roles(UserRole.PLATFORM_ADMIN)
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.hospitalsService.remove(id);
   }

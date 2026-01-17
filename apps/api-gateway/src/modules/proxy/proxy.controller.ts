@@ -59,15 +59,15 @@ export class ProxyController {
   /**
    * Handle requests to /api/services/:serviceName/*
    */
-  @All(':serviceName/*path')
+  @All(':serviceName/*')
   async proxyRequest(
     @Param('serviceName') serviceName: string,
     @Req() req: Request,
     @Res() res: Response,
   ) {
-    // Extract path from req.params which contains array for wildcard
-    const pathParam = (req.params as any).path;
-    const fullPath = Array.isArray(pathParam) ? pathParam.join('/') : pathParam || '';
+    // Extract path from request URL to avoid NestJS routing issues
+    const pathMatch = req.url.match(/^\/api\/services\/[^\/]+\/(.+?)(?:\?|$)/);
+    const fullPath = pathMatch ? pathMatch[1] : '';
     return this.handleProxyRequest(serviceName, fullPath, req, res);
   }
 

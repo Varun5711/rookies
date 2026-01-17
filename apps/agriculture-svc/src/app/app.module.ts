@@ -4,7 +4,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { DatabaseModule } from '@dpi/database';
 import { RedisModule } from '@dpi/redis';
 import { KafkaModule } from '@dpi/kafka';
-import { JwtAuthGuard } from '@dpi/common';
+import { JwtAuthGuard, RolesGuard } from '@dpi/common';
 import { JwtModule } from '@nestjs/jwt';
 import { AdvisoriesModule } from '../modules/advisories/advisories.module';
 import { SchemesModule } from '../modules/schemes/schemes.module';
@@ -58,6 +58,10 @@ import { AuthModule } from '../modules/auth/auth.module';
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
     },
   ],
 })

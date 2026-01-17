@@ -13,13 +13,14 @@ import { DoctorsService } from './doctors.service';
 import { CreateDoctorDto } from './dto/create-doctor.dto';
 import { CreateTimeSlotDto } from './dto/create-time-slot.dto';
 import { QueryDoctorDto } from './dto/query-doctor.dto';
-import { Public } from '@dpi/common';
+import { Public, Roles, UserRole } from '@dpi/common';
 
 @Controller('doctors')
 export class DoctorsController {
   constructor(private readonly doctorsService: DoctorsService) {}
 
   @Post()
+  @Roles(UserRole.DEPARTMENT_ADMIN, UserRole.SERVICE_PROVIDER, UserRole.PLATFORM_ADMIN)
   create(@Body() createDoctorDto: CreateDoctorDto) {
     return this.doctorsService.create(createDoctorDto);
   }
@@ -37,6 +38,7 @@ export class DoctorsController {
   }
 
   @Put(':id')
+  @Roles(UserRole.DEPARTMENT_ADMIN, UserRole.SERVICE_PROVIDER, UserRole.PLATFORM_ADMIN)
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateDto: Partial<CreateDoctorDto>,
@@ -45,6 +47,7 @@ export class DoctorsController {
   }
 
   @Delete(':id')
+  @Roles(UserRole.PLATFORM_ADMIN)
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.doctorsService.remove(id);
   }
@@ -56,6 +59,7 @@ export class DoctorsController {
   }
 
   @Post(':id/slots')
+  @Roles(UserRole.DEPARTMENT_ADMIN, UserRole.SERVICE_PROVIDER, UserRole.PLATFORM_ADMIN)
   createSlot(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() createSlotDto: Omit<CreateTimeSlotDto, 'doctorId'>,
@@ -64,6 +68,7 @@ export class DoctorsController {
   }
 
   @Put('slots/:slotId')
+  @Roles(UserRole.DEPARTMENT_ADMIN, UserRole.SERVICE_PROVIDER, UserRole.PLATFORM_ADMIN)
   updateSlot(
     @Param('slotId', ParseUUIDPipe) slotId: string,
     @Body() updateDto: Partial<CreateTimeSlotDto>,
@@ -72,6 +77,7 @@ export class DoctorsController {
   }
 
   @Delete('slots/:slotId')
+  @Roles(UserRole.DEPARTMENT_ADMIN, UserRole.PLATFORM_ADMIN)
   removeSlot(@Param('slotId', ParseUUIDPipe) slotId: string) {
     return this.doctorsService.removeSlot(slotId);
   }

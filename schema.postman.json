@@ -12,6 +12,22 @@
         {
             "key": "registry_url",
             "value": "http://localhost:3002/api"
+        },
+        {
+            "key": "audit_url",
+            "value": "http://localhost:3004/api"
+        },
+        {
+            "key": "access_token",
+            "value": ""
+        },
+        {
+            "key": "refresh_token",
+            "value": ""
+        },
+        {
+            "key": "admin_access_token",
+            "value": ""
         }
     ],
     "item": [
@@ -220,6 +236,10 @@
                         "method": "POST",
                         "header": [
                             {
+                                "key": "Authorization",
+                                "value": "Bearer {{admin_access_token}}"
+                            },
+                            {
                                 "key": "Content-Type",
                                 "value": "application/json"
                             }
@@ -285,6 +305,10 @@
                         "method": "PUT",
                         "header": [
                             {
+                                "key": "Authorization",
+                                "value": "Bearer {{admin_access_token}}"
+                            },
+                            {
                                 "key": "Content-Type",
                                 "value": "application/json"
                             }
@@ -332,6 +356,12 @@
                     "name": "Delete Service",
                     "request": {
                         "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{admin_access_token}}"
+                            }
+                        ],
                         "url": {
                             "raw": "{{registry_url}}/registry/services/:name",
                             "host": [
@@ -1694,6 +1724,513 @@
                             ]
                         }
                     }
+                }
+            ]
+        },
+        {
+            "name": "Audit Service (Admin Only)",
+            "item": [
+                {
+                    "name": "Get All Audit Logs",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{admin_access_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{audit_url}}/audit/logs?limit=50",
+                            "host": [
+                                "{{audit_url}}"
+                            ],
+                            "path": [
+                                "audit",
+                                "logs"
+                            ],
+                            "query": [
+                                {
+                                    "key": "limit",
+                                    "value": "50"
+                                },
+                                {
+                                    "key": "offset",
+                                    "value": "0",
+                                    "disabled": true
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Logs by Event Type",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{admin_access_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{audit_url}}/audit/logs/event/:eventType",
+                            "host": [
+                                "{{audit_url}}"
+                            ],
+                            "path": [
+                                "audit",
+                                "logs",
+                                "event",
+                                ":eventType"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "eventType",
+                                    "value": "USER_LOGIN"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get User Activity Logs",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{admin_access_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{audit_url}}/audit/logs/user/:userId",
+                            "host": [
+                                "{{audit_url}}"
+                            ],
+                            "path": [
+                                "audit",
+                                "logs",
+                                "user",
+                                ":userId"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "userId",
+                                    "value": "user-uuid"
+                                }
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "Get Audit Statistics",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{admin_access_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{audit_url}}/audit/stats",
+                            "host": [
+                                "{{audit_url}}"
+                            ],
+                            "path": [
+                                "audit",
+                                "stats"
+                            ]
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "name": "RBAC Security Tests",
+            "item": [
+                {
+                    "name": "Citizen Cannot Create Hospital",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Fake Hospital\",\n  \"city\": \"Bangalore\",\n  \"state\": \"Karnataka\",\n  \"type\": \"private\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{gateway_url}}/services/healthcare/hospitals",
+                            "host": [
+                                "{{gateway_url}}"
+                            ],
+                            "path": [
+                                "services",
+                                "healthcare",
+                                "hospitals"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Citizen cannot create hospital - 403 expected', function() {",
+                                    "  pm.response.to.have.status(403);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Citizen Cannot Create Doctor",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Fake Doctor\",\n  \"specialization\": \"general\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{gateway_url}}/services/healthcare/doctors",
+                            "host": [
+                                "{{gateway_url}}"
+                            ],
+                            "path": [
+                                "services",
+                                "healthcare",
+                                "doctors"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Citizen cannot create doctor - 403 expected', function() {",
+                                    "  pm.response.to.have.status(403);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Citizen Cannot Register Service",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"malicious-service\",\n  \"baseUrl\": \"http://evil.com\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{registry_url}}/registry/services",
+                            "host": [
+                                "{{registry_url}}"
+                            ],
+                            "path": [
+                                "registry",
+                                "services"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Citizen cannot register service - 403 expected', function() {",
+                                    "  pm.response.to.have.status(403);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Citizen Cannot Update Service",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"baseUrl\": \"http://evil.com\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{registry_url}}/registry/services/healthcare",
+                            "host": [
+                                "{{registry_url}}"
+                            ],
+                            "path": [
+                                "registry",
+                                "services",
+                                "healthcare"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Citizen cannot update service - 403 expected', function() {",
+                                    "  pm.response.to.have.status(403);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Citizen Cannot Delete Service",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{registry_url}}/registry/services/healthcare",
+                            "host": [
+                                "{{registry_url}}"
+                            ],
+                            "path": [
+                                "registry",
+                                "services",
+                                "healthcare"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Citizen cannot delete service - 403 expected', function() {",
+                                    "  pm.response.to.have.status(403);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Citizen Cannot View Audit Logs",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{audit_url}}/audit/logs",
+                            "host": [
+                                "{{audit_url}}"
+                            ],
+                            "path": [
+                                "audit",
+                                "logs"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Citizen cannot view audit logs - 403 expected', function() {",
+                                    "  pm.response.to.have.status(403);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Citizen Cannot Delete Hospital",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{access_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{gateway_url}}/services/healthcare/hospitals/{{hospital_id}}",
+                            "host": [
+                                "{{gateway_url}}"
+                            ],
+                            "path": [
+                                "services",
+                                "healthcare",
+                                "hospitals",
+                                "{{hospital_id}}"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Citizen cannot delete hospital - 403 expected', function() {",
+                                    "  pm.response.to.have.status(403);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Unauthenticated Cannot Book Appointment",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"doctorId\": \"test\",\n  \"hospitalId\": \"test\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{gateway_url}}/services/healthcare/appointments",
+                            "host": [
+                                "{{gateway_url}}"
+                            ],
+                            "path": [
+                                "services",
+                                "healthcare",
+                                "appointments"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Unauthenticated cannot book appointment - 401 expected', function() {",
+                                    "  pm.response.to.have.status(401);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Public CAN View Hospitals",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{gateway_url}}/services/healthcare/hospitals",
+                            "host": [
+                                "{{gateway_url}}"
+                            ],
+                            "path": [
+                                "services",
+                                "healthcare",
+                                "hospitals"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Public can view hospitals - 200 expected', function() {",
+                                    "  pm.response.to.have.status(200);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Public CAN View Services",
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{registry_url}}/registry/services",
+                            "host": [
+                                "{{registry_url}}"
+                            ],
+                            "path": [
+                                "registry",
+                                "services"
+                            ]
+                        }
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Public can view services - 200 expected', function() {",
+                                    "  pm.response.to.have.status(200);",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
                 }
             ]
         }

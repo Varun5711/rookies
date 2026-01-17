@@ -57,19 +57,19 @@ export class AuthProxyController {
    * Public endpoint - authentication not required
    */
   @Public()
-  @All('*path')
+  @All('*')
   async proxyAuthRequest(
-    @Param('path') path: string,
     @Req() req: Request,
     @Res() res: Response,
   ) {
     const correlationId = (req.headers['x-correlation-id'] as string) || '';
 
-    // Use the path parameter from the route
-    const targetUrl = this.buildTargetUrl(path || '', req.query);
+    // Extract path from request URL instead of route params to avoid NestJS routing issues
+    const fullPath = req.url.replace(/^\/api\/auth\/?/, '').split('?')[0];
+    const targetUrl = this.buildTargetUrl(fullPath, req.query);
 
     this.logger.debug(
-      `[${correlationId}] Auth proxy: ${req.method} /auth/${path} -> ${targetUrl}`,
+      `[${correlationId}] Auth proxy: ${req.method} /auth/${fullPath} -> ${targetUrl}`,
     );
 
     const headers = this.buildHeaders(req, correlationId);
@@ -236,7 +236,7 @@ export class AuthProxyController {
 
   private buildTargetUrl(path: string, query: Request['query']): string {
     const cleanPath = path.startsWith('/') ? path : `/${path}`;
-    let url = `${this.authServiceUrl}/api/auth${cleanPath}`;
+    let url = `${this.authServiceUrl}/api${cleanPath}`;
 
     const queryString = Object.entries(query)
       .filter(([, value]) => value !== undefined)
