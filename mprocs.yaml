@@ -1,44 +1,43 @@
 procs:
   infra:
     shell: "docker-compose -f infra/docker/docker-compose.yml up"
-    cwd: "."
 
   api-gateway:
-    shell: "bunx nx serve api-gateway"
+    shell: "bunx dotenv run ./node_modules/.bin/ts-node -r tsconfig-paths/register -P apps/api-gateway/tsconfig.app.json apps/api-gateway/src/main.ts"
     env:
       NODE_ENV: "development"
 
   auth-svc:
-    shell: "bunx nx serve auth-svc"
+    shell: "bunx dotenv run ./node_modules/.bin/ts-node -r tsconfig-paths/register -P apps/auth-svc/tsconfig.app.json apps/auth-svc/src/main.ts"
     env:
       NODE_ENV: "development"
 
   service-registry:
-    shell: "bunx nx serve service-registry"
+    shell: "bunx dotenv run ./node_modules/.bin/ts-node -r tsconfig-paths/register -P apps/service-registry/tsconfig.app.json apps/service-registry/src/main.ts"
     env:
       NODE_ENV: "development"
 
   notification-svc:
-    shell: "bunx nx serve notification-svc"
+    shell: "bunx dotenv run ./node_modules/.bin/ts-node -r tsconfig-paths/register -P apps/notification-svc/tsconfig.app.json apps/notification-svc/src/main.ts"
     env:
       NODE_ENV: "development"
 
   audit-svc:
-    shell: "bunx nx serve audit-svc"
+    shell: "bunx dotenv run ./node_modules/.bin/ts-node -r tsconfig-paths/register -P apps/audit-svc/tsconfig.app.json apps/audit-svc/src/main.ts"
     env:
       NODE_ENV: "development"
 
   agriculture-svc:
-    shell: "bunx nx serve agriculture-svc"
+    shell: "bunx dotenv run ./node_modules/.bin/ts-node -r tsconfig-paths/register -P apps/agriculture-svc/tsconfig.app.json apps/agriculture-svc/src/main.ts"
     env:
       NODE_ENV: "development"
 
   healthcare-svc:
-    shell: "bunx nx serve healthcare-svc"
+    shell: "bunx dotenv run ./node_modules/.bin/ts-node -r tsconfig-paths/register -P apps/healthcare-svc/tsconfig.app.json apps/healthcare-svc/src/main.ts"
     env:
       NODE_ENV: "development"
 
   urban-svc:
-    shell: "bunx nx serve urban-svc"
+    shell: "bunx dotenv run ./node_modules/.bin/ts-node -r tsconfig-paths/register -P apps/urban-svc/tsconfig.app.json apps/urban-svc/src/main.ts"
     env:
       NODE_ENV: "development"
