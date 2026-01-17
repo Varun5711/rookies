@@ -41,3 +41,4 @@ procs:
     shell: "bunx dotenv run ./node_modules/.bin/ts-node -r tsconfig-paths/register -P apps/urban-svc/tsconfig.app.json apps/urban-svc/src/main.ts"
     env:
       NODE_ENV: "development"
+      
