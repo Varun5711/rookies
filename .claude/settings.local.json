@@ -1,11 +1,12 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(npx nx run:*)",
+      "Bash(tree:*)"
+    ]
+  },
   "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
     "shadcn"
-  ],
-  "permissions": {
-    "allow": [
-      "Bash(npx nx run:*)"
-    ]
-  }
+  ]
 }
