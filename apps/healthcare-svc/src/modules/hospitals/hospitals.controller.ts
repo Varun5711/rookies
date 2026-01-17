@@ -1,43 +1,50 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Put,
+  Delete,
+  Query,
+  ParseUUIDPipe,
+} from '@nestjs/common';
 import { HospitalsService } from './hospitals.service';
-import { HospitalDto, PaginatedHospitalsDto } from './dto/hospital.dto';
+import { CreateHospitalDto } from './dto/create-hospital.dto';
+import { QueryHospitalDto } from './dto/query-hospital.dto';
+import { Public } from '@dpi/common';
 
-/**
- * Hospitals Controller
- * Handles hospital-related API endpoints
- *
- * Endpoints:
- * - GET /hospitals - List all hospitals with pagination
- * - GET /hospitals/:id - Get hospital by ID
- */
 @Controller('hospitals')
 export class HospitalsController {
   constructor(private readonly hospitalsService: HospitalsService) {}
 
-  /**
-   * List all hospitals with pagination
-   * @param page - Page number (default: 1)
-   * @param pageSize - Items per page (default: 10)
-   * @returns Paginated list of hospitals
-   */
-  @Get()
-  async findAll(
-    @Query('page') page?: string,
-    @Query('pageSize') pageSize?: string,
-  ): Promise<PaginatedHospitalsDto> {
-    const pageNum = page ? parseInt(page, 10) : 1;
-    const pageSizeNum = pageSize ? parseInt(pageSize, 10) : 10;
-
-    return this.hospitalsService.findAll(pageNum, pageSizeNum);
+  @Post()
+  create(@Body() createHospitalDto: CreateHospitalDto) {
+    return this.hospitalsService.create(createHospitalDto);
   }
 
-  /**
-   * Get hospital by ID
-   * @param id - Hospital ID
-   * @returns Hospital details
-   */
+  @Get()
+  @Public()
+  findAll(@Query() query: QueryHospitalDto) {
+    return this.hospitalsService.findAll(query);
+  }
+
   @Get(':id')
-  async findOne(@Param('id') id: string): Promise<HospitalDto> {
+  @Public()
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.hospitalsService.findOne(id);
+  }
+
+  @Put(':id')
+  update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updateDto: Partial<CreateHospitalDto>,
+  ) {
+    return this.hospitalsService.update(id, updateDto);
+  }
+
+  @Delete(':id')
+  remove(@Param('id', ParseUUIDPipe) id: string) {
+    return this.hospitalsService.remove(id);
   }
 }

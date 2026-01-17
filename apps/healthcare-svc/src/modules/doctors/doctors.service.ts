@@ -1,24 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Like, FindOptionsWhere } from 'typeorm';
 import { Doctor } from './entities/doctor.entity';
 import { TimeSlot } from './entities/time-slot.entity';
-import {
-  DoctorDto,
-  PaginatedDoctorsDto,
-  AvailableSlotsDto,
-  TimeSlotDto,
-} from './dto/doctor.dto';
+import { CreateDoctorDto } from './dto/create-doctor.dto';
+import { CreateTimeSlotDto } from './dto/create-time-slot.dto';
+import { QueryDoctorDto } from './dto/query-doctor.dto';
 
-/**
- * Doctors Service
- * Handles doctor-related business logic
- *
- * Features:
- * - Find all doctors with optional hospital filter
- * - Find doctor by ID
- * - Find available time slots for a doctor
- */
 @Injectable()
 export class DoctorsService {
   constructor(
@@ -28,109 +16,98 @@ export class DoctorsService {
     private readonly timeSlotRepository: Repository<TimeSlot>,
   ) {}
 
-  /**
-   * Find all doctors with optional hospital filter and pagination
-   * @param page - Page number (1-based)
-   * @param pageSize - Number of items per page
-   * @param hospitalId - Optional hospital ID to filter by
-   * @returns Paginated list of doctors
-   */
-  async findAll(
-    page: number = 1,
-    pageSize: number = 10,
-    hospitalId?: string,
-  ): Promise<PaginatedDoctorsDto> {
-    const skip = (page - 1) * pageSize;
-    const query = this.doctorRepository.createQueryBuilder('doctor');
+  async create(createDoctorDto: CreateDoctorDto): Promise<Doctor> {
+    const doctor = this.doctorRepository.create(createDoctorDto);
+    return this.doctorRepository.save(doctor);
+  }
 
-    if (hospitalId) {
-      query.where('doctor.hospitalId = :hospitalId', { hospitalId });
-    }
+  async findAll(query: QueryDoctorDto) {
+    const { hospitalId, specialization, search, page = 1, limit = 10 } = query;
 
-    query.andWhere('doctor.isAvailable = :isAvailable', { isAvailable: true });
-    query.skip(skip).take(pageSize).orderBy('doctor.name', 'ASC');
+    const where: FindOptionsWhere<Doctor> = { isAvailable: true };
 
-    const [doctors, total] = await query.getManyAndCount();
-    const totalPages = Math.ceil(total / pageSize);
+    if (hospitalId) where.hospitalId = hospitalId;
+    if (specialization) where.specialization = specialization;
+    if (search) where.name = Like(`%${search}%`);
+
+    const [doctors, total] = await this.doctorRepository.findAndCount({
+      where,
+      relations: ['hospital'],
+      skip: (page - 1) * limit,
+      take: limit,
+      order: { name: 'ASC' },
+    });
 
     return {
-      data: doctors.map((doctor) => DoctorDto.fromEntity(doctor)),
-      total,
-      page,
-      pageSize,
-      totalPages,
+      data: doctors,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
     };
   }
 
-  /**
-   * Find doctor by ID
-   * @param id - Doctor ID
-   * @returns Doctor data if found
-   * @throws NotFoundException if doctor not found
-   */
-  async findOne(id: string): Promise<DoctorDto> {
+  async findOne(id: string): Promise<Doctor> {
     const doctor = await this.doctorRepository.findOne({
-      where: { id, isAvailable: true },
+      where: { id },
+      relations: ['hospital', 'timeSlots'],
     });
 
     if (!doctor) {
       throw new NotFoundException(`Doctor with ID ${id} not found`);
     }
 
-    return DoctorDto.fromEntity(doctor);
+    return doctor;
   }
 
-  /**
-   * Find available time slots for a doctor on a specific date
-   * @param doctorId - Doctor ID
-   * @param date - Date to find slots for (YYYY-MM-DD format)
-   * @returns Available slots for the doctor on that date
-   * @throws NotFoundException if doctor not found
-   */
-  async findAvailableSlots(
-    doctorId: string,
-    date: string,
-  ): Promise<AvailableSlotsDto> {
-    // Verify doctor exists
-    const doctor = await this.doctorRepository.findOne({
-      where: { id: doctorId, isAvailable: true },
-    });
+  async update(id: string, updateDto: Partial<CreateDoctorDto>): Promise<Doctor> {
+    const doctor = await this.findOne(id);
+    Object.assign(doctor, updateDto);
+    return this.doctorRepository.save(doctor);
+  }
 
-    if (!doctor) {
-      throw new NotFoundException(`Doctor with ID ${doctorId} not found`);
+  async remove(id: string): Promise<void> {
+    const doctor = await this.findOne(id);
+    await this.doctorRepository.remove(doctor);
+  }
+
+  async getSlots(doctorId: string): Promise<TimeSlot[]> {
+    await this.findOne(doctorId);
+    return this.timeSlotRepository.find({
+      where: { doctorId, isAvailable: true },
+      order: { dayOfWeek: 'ASC', startTime: 'ASC' },
+    });
+  }
+
+  async createSlot(createSlotDto: CreateTimeSlotDto): Promise<TimeSlot> {
+    await this.findOne(createSlotDto.doctorId);
+    const slot = this.timeSlotRepository.create(createSlotDto);
+    return this.timeSlotRepository.save(slot);
+  }
+
+  async updateSlot(slotId: string, updateDto: Partial<CreateTimeSlotDto>): Promise<TimeSlot> {
+    const slot = await this.timeSlotRepository.findOne({ where: { id: slotId } });
+    if (!slot) {
+      throw new NotFoundException(`Time slot with ID ${slotId} not found`);
     }
-
-    // Find available slots for the date
-    const slots = await this.timeSlotRepository.find({
-      where: {
-        doctorId,
-        date: new Date(date),
-        isAvailable: true,
-      },
-      order: { startTime: 'ASC' },
-    });
-
-    return {
-      doctorId,
-      doctorName: doctor.name,
-      date: new Date(date),
-      slots: slots.map((slot) => this.timeSlotToDto(slot)),
-    };
+    Object.assign(slot, updateDto);
+    return this.timeSlotRepository.save(slot);
   }
 
-  /**
-   * Convert TimeSlot entity to DTO
-   */
-  private timeSlotToDto(timeSlot: TimeSlot): TimeSlotDto {
-    return {
-      id: timeSlot.id,
-      doctorId: timeSlot.doctorId,
-      startTime: timeSlot.startTime,
-      endTime: timeSlot.endTime,
-      date: timeSlot.date,
-      isAvailable: timeSlot.isAvailable,
-      createdAt: timeSlot.createdAt,
-      updatedAt: timeSlot.updatedAt,
-    };
+  async removeSlot(slotId: string): Promise<void> {
+    const slot = await this.timeSlotRepository.findOne({ where: { id: slotId } });
+    if (!slot) {
+      throw new NotFoundException(`Time slot with ID ${slotId} not found`);
+    }
+    await this.timeSlotRepository.remove(slot);
+  }
+
+  async findByHospital(hospitalId: string): Promise<Doctor[]> {
+    return this.doctorRepository.find({
+      where: { hospitalId, isAvailable: true },
+      order: { name: 'ASC' },
+    });
   }
 }

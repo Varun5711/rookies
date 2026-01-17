@@ -1,12 +1,15 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
 import { DatabaseModule } from '@dpi/database';
+import { RedisModule } from '@dpi/redis';
 import { KafkaModule } from '@dpi/kafka';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { JwtAuthGuard } from '@dpi/common';
+import { JwtModule } from '@nestjs/jwt';
 import { HospitalsModule } from '../modules/hospitals/hospitals.module';
 import { DoctorsModule } from '../modules/doctors/doctors.module';
 import { AppointmentsModule } from '../modules/appointments/appointments.module';
+import { HealthModule } from '../modules/health/health.module';
 
 /**
  * Healthcare Service Module
@@ -20,27 +23,41 @@ import { AppointmentsModule } from '../modules/appointments/appointments.module'
  */
 @Module({
   imports: [
-    // Global configuration
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '.env',
     }),
-
-    // Database (connects to ingenium_healthcare)
-    DatabaseModule.forRoot({ serviceName: 'HEALTHCARE' }),
-
-    // Kafka for event streaming
+    DatabaseModule.forRoot(),
+    RedisModule.forRootAsync({
+      useFactory: (configService: ConfigService) => ({
+        host: configService.get('REDIS_HOST', 'localhost'),
+        port: configService.get('REDIS_PORT', 6379),
+      }),
+      inject: [ConfigService],
+    }),
     KafkaModule.register({
+      name: 'KAFKA_SERVICE',
       clientId: 'healthcare-svc',
-      brokers: [process.env.KAFKA_BROKERS || 'localhost:9092'],
+      brokers: [process.env.KAFKA_BROKER || 'localhost:9092'],
     }),
-
-    // Feature modules
+    JwtModule.registerAsync({
+      useFactory: (configService: ConfigService) => ({
+        secret: configService.get('JWT_SECRET', 'super-secret-key'),
+        signOptions: {
+          expiresIn: configService.get('JWT_EXPIRES_IN', '15m'),
+        },
+      }),
+      inject: [ConfigService],
+    }),
     HospitalsModule,
     DoctorsModule,
     AppointmentsModule,
+    HealthModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+  ],
 })
 export class AppModule {}

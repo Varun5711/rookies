@@ -1,85 +1,55 @@
 import {
   Controller,
-  Post,
   Get,
-  Put,
+  Post,
   Body,
   Param,
+  Put,
   Query,
-  HttpCode,
-  HttpStatus,
+  ParseUUIDPipe,
 } from '@nestjs/common';
-import { CurrentUser } from '@dpi/common';
 import { AppointmentsService } from './appointments.service';
-import {
-  CreateAppointmentDto,
-  AppointmentDto,
-  PaginatedAppointmentsDto,
-} from './dto/appointment.dto';
+import { CreateAppointmentDto } from './dto/create-appointment.dto';
+import { QueryAppointmentDto } from './dto/query-appointment.dto';
+import { CancelAppointmentDto } from './dto/cancel-appointment.dto';
+import { CurrentUser, ICurrentUser } from '@dpi/common';
 
-/**
- * Appointments Controller
- * Handles appointment booking and management endpoints
- *
- * Endpoints:
- * - POST /appointments - Book new appointment
- * - GET /me/appointments - Get user's appointments
- * - PUT /appointments/:id/cancel - Cancel appointment
- */
 @Controller('appointments')
 export class AppointmentsController {
   constructor(private readonly appointmentsService: AppointmentsService) {}
 
-  /**
-   * Book a new appointment
-   * @param currentUser - Current user from JWT token
-   * @param createAppointmentDto - Appointment details
-   * @returns Created appointment
-   */
   @Post()
-  @HttpCode(HttpStatus.CREATED)
-  async create(
-    @CurrentUser() currentUser: any,
-    @Body() createAppointmentDto: CreateAppointmentDto,
-  ): Promise<AppointmentDto> {
-    return this.appointmentsService.create(currentUser.sub, createAppointmentDto);
+  create(
+    @CurrentUser() user: ICurrentUser,
+    @Body() createDto: CreateAppointmentDto,
+  ) {
+    return this.appointmentsService.create(user.id, createDto);
   }
 
-  /**
-   * Get all appointments for the current user
-   * @param currentUser - Current user from JWT token
-   * @param page - Page number (default: 1)
-   * @param pageSize - Items per page (default: 10)
-   * @returns Paginated list of user's appointments
-   */
-  @Get('me/appointments')
-  async getMyAppointments(
-    @CurrentUser() currentUser: any,
-    @Query('page') page?: string,
-    @Query('pageSize') pageSize?: string,
-  ): Promise<PaginatedAppointmentsDto> {
-    const pageNum = page ? parseInt(page, 10) : 1;
-    const pageSizeNum = pageSize ? parseInt(pageSize, 10) : 10;
-
-    return this.appointmentsService.findByUserId(
-      currentUser.sub,
-      pageNum,
-      pageSizeNum,
-    );
+  @Get()
+  findAll(@Query() query: QueryAppointmentDto) {
+    return this.appointmentsService.findAll(query);
   }
 
-  /**
-   * Cancel an appointment
-   * @param currentUser - Current user from JWT token
-   * @param appointmentId - Appointment ID to cancel
-   * @returns Cancelled appointment
-   */
+  @Get('me')
+  findMyAppointments(
+    @CurrentUser() user: ICurrentUser,
+    @Query() query: QueryAppointmentDto,
+  ) {
+    return this.appointmentsService.findByUser(user.id, query);
+  }
+
+  @Get(':id')
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
+    return this.appointmentsService.findOne(id);
+  }
+
   @Put(':id/cancel')
-  @HttpCode(HttpStatus.OK)
-  async cancelAppointment(
-    @CurrentUser() currentUser: any,
-    @Param('id') appointmentId: string,
-  ): Promise<AppointmentDto> {
-    return this.appointmentsService.cancel(appointmentId, currentUser.sub);
+  cancel(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: ICurrentUser,
+    @Body() cancelDto: CancelAppointmentDto,
+  ) {
+    return this.appointmentsService.cancel(id, user.id, cancelDto);
   }
 }

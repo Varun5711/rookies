@@ -1,64 +1,78 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
-import { DoctorsService } from './doctors.service';
 import {
-  DoctorDto,
-  PaginatedDoctorsDto,
-  AvailableSlotsDto,
-} from './dto/doctor.dto';
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Put,
+  Delete,
+  Query,
+  ParseUUIDPipe,
+} from '@nestjs/common';
+import { DoctorsService } from './doctors.service';
+import { CreateDoctorDto } from './dto/create-doctor.dto';
+import { CreateTimeSlotDto } from './dto/create-time-slot.dto';
+import { QueryDoctorDto } from './dto/query-doctor.dto';
+import { Public } from '@dpi/common';
 
-/**
- * Doctors Controller
- * Handles doctor-related API endpoints
- *
- * Endpoints:
- * - GET /doctors - List all doctors with optional hospital filter
- * - GET /doctors/:id - Get doctor by ID
- * - GET /doctors/:id/slots - Get available time slots for a doctor
- */
 @Controller('doctors')
 export class DoctorsController {
   constructor(private readonly doctorsService: DoctorsService) {}
 
-  /**
-   * List all doctors with optional hospital filter and pagination
-   * @param page - Page number (default: 1)
-   * @param pageSize - Items per page (default: 10)
-   * @param hospitalId - Optional hospital ID to filter by
-   * @returns Paginated list of doctors
-   */
-  @Get()
-  async findAll(
-    @Query('page') page?: string,
-    @Query('pageSize') pageSize?: string,
-    @Query('hospitalId') hospitalId?: string,
-  ): Promise<PaginatedDoctorsDto> {
-    const pageNum = page ? parseInt(page, 10) : 1;
-    const pageSizeNum = pageSize ? parseInt(pageSize, 10) : 10;
-
-    return this.doctorsService.findAll(pageNum, pageSizeNum, hospitalId);
+  @Post()
+  create(@Body() createDoctorDto: CreateDoctorDto) {
+    return this.doctorsService.create(createDoctorDto);
   }
 
-  /**
-   * Get doctor by ID
-   * @param id - Doctor ID
-   * @returns Doctor details
-   */
+  @Get()
+  @Public()
+  findAll(@Query() query: QueryDoctorDto) {
+    return this.doctorsService.findAll(query);
+  }
+
   @Get(':id')
-  async findOne(@Param('id') id: string): Promise<DoctorDto> {
+  @Public()
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.doctorsService.findOne(id);
   }
 
-  /**
-   * Get available time slots for a doctor
-   * @param id - Doctor ID
-   * @param date - Date in YYYY-MM-DD format
-   * @returns Available slots for the doctor on that date
-   */
+  @Put(':id')
+  update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updateDto: Partial<CreateDoctorDto>,
+  ) {
+    return this.doctorsService.update(id, updateDto);
+  }
+
+  @Delete(':id')
+  remove(@Param('id', ParseUUIDPipe) id: string) {
+    return this.doctorsService.remove(id);
+  }
+
   @Get(':id/slots')
-  async getAvailableSlots(
-    @Param('id') id: string,
-    @Query('date') date: string,
-  ): Promise<AvailableSlotsDto> {
-    return this.doctorsService.findAvailableSlots(id, date);
+  @Public()
+  getSlots(@Param('id', ParseUUIDPipe) id: string) {
+    return this.doctorsService.getSlots(id);
+  }
+
+  @Post(':id/slots')
+  createSlot(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() createSlotDto: Omit<CreateTimeSlotDto, 'doctorId'>,
+  ) {
+    return this.doctorsService.createSlot({ ...createSlotDto, doctorId: id });
+  }
+
+  @Put('slots/:slotId')
+  updateSlot(
+    @Param('slotId', ParseUUIDPipe) slotId: string,
+    @Body() updateDto: Partial<CreateTimeSlotDto>,
+  ) {
+    return this.doctorsService.updateSlot(slotId, updateDto);
+  }
+
+  @Delete('slots/:slotId')
+  removeSlot(@Param('slotId', ParseUUIDPipe) slotId: string) {
+    return this.doctorsService.removeSlot(slotId);
   }
 }

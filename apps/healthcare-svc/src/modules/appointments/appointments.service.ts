@@ -1,165 +1,202 @@
 import {
   Injectable,
   NotFoundException,
-  ForbiddenException,
+  BadRequestException,
+  Inject,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { KafkaService } from '@dpi/kafka';
+import { Repository, Between, FindOptionsWhere, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
+import { ClientKafka } from '@nestjs/microservices';
 import { Appointment, AppointmentStatus } from './entities/appointment.entity';
+import { CreateAppointmentDto } from './dto/create-appointment.dto';
+import { QueryAppointmentDto } from './dto/query-appointment.dto';
+import { CancelAppointmentDto } from './dto/cancel-appointment.dto';
 import {
-  CreateAppointmentDto,
-  AppointmentDto,
-  PaginatedAppointmentsDto,
-} from './dto/appointment.dto';
+  HealthcareEventTopics,
+  AppointmentBookedEvent,
+  AppointmentCancelledEvent,
+} from '@dpi/kafka';
 
-/**
- * Appointments Service
- * Handles appointment booking and management
- *
- * Features:
- * - Book new appointments
- * - Get user's appointments
- * - Cancel appointments
- * - Emit Kafka events for appointment state changes
- */
 @Injectable()
 export class AppointmentsService {
   constructor(
     @InjectRepository(Appointment)
     private readonly appointmentRepository: Repository<Appointment>,
-    private readonly kafkaService: KafkaService,
+    @Inject('KAFKA_SERVICE')
+    private readonly kafkaClient: ClientKafka,
   ) {}
 
-  /**
-   * Create a new appointment
-   * Emits 'dpi.healthcare.appointment-booked' event to Kafka
-   * @param userId - User ID booking the appointment
-   * @param createAppointmentDto - Appointment details
-   * @returns Created appointment
-   */
-  async create(
-    userId: string,
-    createAppointmentDto: CreateAppointmentDto,
-  ): Promise<AppointmentDto> {
-    // Create appointment entity
-    const appointment = this.appointmentRepository.create({
-      userId,
-      ...createAppointmentDto,
-      status: AppointmentStatus.PENDING,
-    });
-
-    // Save to database
-    const savedAppointment = await this.appointmentRepository.save(
-      appointment,
-    );
-
-    // Emit Kafka event
-    await this.kafkaService.emit('dpi.healthcare.appointment-booked', {
-      appointmentId: savedAppointment.id,
-      userId: savedAppointment.userId,
-      doctorId: savedAppointment.doctorId,
-      hospitalId: savedAppointment.hospitalId,
-      appointmentDate: savedAppointment.appointmentDate,
-      patientName: savedAppointment.patientName,
-      patientMobile: savedAppointment.patientMobile,
-      status: savedAppointment.status,
-      timestamp: new Date(),
-    });
-
-    return AppointmentDto.fromEntity(savedAppointment);
+  async onModuleInit() {
+    await this.kafkaClient.connect();
   }
 
-  /**
-   * Get all appointments for a specific user with pagination
-   * @param userId - User ID
-   * @param page - Page number (1-based)
-   * @param pageSize - Number of items per page
-   * @returns Paginated list of user's appointments
-   */
-  async findByUserId(
-    userId: string,
-    page: number = 1,
-    pageSize: number = 10,
-  ): Promise<PaginatedAppointmentsDto> {
-    const skip = (page - 1) * pageSize;
-
-    const [appointments, total] = await this.appointmentRepository.findAndCount(
-      {
-        where: { userId },
-        skip,
-        take: pageSize,
-        order: { appointmentDate: 'DESC' },
+  async create(userId: string, createDto: CreateAppointmentDto): Promise<Appointment> {
+    // Check if there's already an appointment at this time
+    const existingAppointment = await this.appointmentRepository.findOne({
+      where: {
+        doctorId: createDto.doctorId,
+        appointmentDate: new Date(createDto.appointmentDate),
+        appointmentTime: createDto.appointmentTime,
+        status: AppointmentStatus.CONFIRMED,
       },
-    );
+    });
 
-    const totalPages = Math.ceil(total / pageSize);
+    if (existingAppointment) {
+      throw new BadRequestException('This time slot is already booked');
+    }
+
+    const appointment = this.appointmentRepository.create({
+      ...createDto,
+      userId,
+      appointmentDate: new Date(createDto.appointmentDate),
+      status: AppointmentStatus.CONFIRMED,
+    });
+
+    const savedAppointment = await this.appointmentRepository.save(appointment);
+
+    // Emit Kafka event
+    const event: AppointmentBookedEvent = {
+      appointmentId: savedAppointment.id,
+      userId,
+      hospitalId: savedAppointment.hospitalId,
+      doctorId: savedAppointment.doctorId,
+      appointmentDate: savedAppointment.appointmentDate.toISOString().split('T')[0],
+      appointmentTime: savedAppointment.appointmentTime,
+      status: savedAppointment.status,
+      timestamp: new Date().toISOString(),
+    };
+
+    this.kafkaClient.emit(HealthcareEventTopics.APPOINTMENT_BOOKED, event);
+
+    return savedAppointment;
+  }
+
+  async findAll(query: QueryAppointmentDto) {
+    const { doctorId, hospitalId, status, fromDate, toDate, page = 1, limit = 10 } = query;
+
+    const where: FindOptionsWhere<Appointment> = {};
+
+    if (doctorId) where.doctorId = doctorId;
+    if (hospitalId) where.hospitalId = hospitalId;
+    if (status) where.status = status;
+
+    if (fromDate && toDate) {
+      where.appointmentDate = Between(new Date(fromDate), new Date(toDate));
+    } else if (fromDate) {
+      where.appointmentDate = MoreThanOrEqual(new Date(fromDate));
+    } else if (toDate) {
+      where.appointmentDate = LessThanOrEqual(new Date(toDate));
+    }
+
+    const [appointments, total] = await this.appointmentRepository.findAndCount({
+      where,
+      relations: ['doctor', 'hospital'],
+      skip: (page - 1) * limit,
+      take: limit,
+      order: { appointmentDate: 'ASC', appointmentTime: 'ASC' },
+    });
 
     return {
-      data: appointments.map((appointment) =>
-        AppointmentDto.fromEntity(appointment),
-      ),
-      total,
-      page,
-      pageSize,
-      totalPages,
+      data: appointments,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
     };
   }
 
-  /**
-   * Cancel an appointment
-   * Only the user who booked the appointment can cancel it
-   * @param appointmentId - Appointment ID
-   * @param userId - User ID requesting cancellation
-   * @returns Cancelled appointment
-   * @throws NotFoundException if appointment not found
-   * @throws ForbiddenException if user is not the owner
-   */
-  async cancel(appointmentId: string, userId: string): Promise<AppointmentDto> {
+  async findOne(id: string): Promise<Appointment> {
     const appointment = await this.appointmentRepository.findOne({
-      where: { id: appointmentId },
+      where: { id },
+      relations: ['doctor', 'hospital'],
     });
 
     if (!appointment) {
-      throw new NotFoundException(
-        `Appointment with ID ${appointmentId} not found`,
-      );
+      throw new NotFoundException(`Appointment with ID ${id} not found`);
     }
 
-    // Check if user owns this appointment
-    if (appointment.userId !== userId) {
-      throw new ForbiddenException(
-        'You can only cancel your own appointments',
-      );
+    return appointment;
+  }
+
+  async findByUser(userId: string, query: QueryAppointmentDto) {
+    const { status, fromDate, toDate, page = 1, limit = 10 } = query;
+
+    const where: FindOptionsWhere<Appointment> = { userId };
+
+    if (status) where.status = status;
+
+    if (fromDate && toDate) {
+      where.appointmentDate = Between(new Date(fromDate), new Date(toDate));
+    } else if (fromDate) {
+      where.appointmentDate = MoreThanOrEqual(new Date(fromDate));
+    } else if (toDate) {
+      where.appointmentDate = LessThanOrEqual(new Date(toDate));
     }
 
-    // Check if appointment can be cancelled (not already completed or cancelled)
-    if (
-      appointment.status === AppointmentStatus.COMPLETED ||
-      appointment.status === AppointmentStatus.CANCELLED
-    ) {
-      throw new ForbiddenException(
-        `Cannot cancel appointment with status ${appointment.status}`,
-      );
-    }
-
-    // Update status
-    appointment.status = AppointmentStatus.CANCELLED;
-    const updatedAppointment = await this.appointmentRepository.save(
-      appointment,
-    );
-
-    // Emit Kafka event for cancellation
-    await this.kafkaService.emit('dpi.healthcare.appointment-cancelled', {
-      appointmentId: updatedAppointment.id,
-      userId: updatedAppointment.userId,
-      doctorId: updatedAppointment.doctorId,
-      hospitalId: updatedAppointment.hospitalId,
-      patientName: updatedAppointment.patientName,
-      status: updatedAppointment.status,
-      timestamp: new Date(),
+    const [appointments, total] = await this.appointmentRepository.findAndCount({
+      where,
+      relations: ['doctor', 'hospital'],
+      skip: (page - 1) * limit,
+      take: limit,
+      order: { appointmentDate: 'DESC', appointmentTime: 'DESC' },
     });
 
-    return AppointmentDto.fromEntity(updatedAppointment);
+    return {
+      data: appointments,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async cancel(
+    id: string,
+    userId: string,
+    cancelDto: CancelAppointmentDto,
+  ): Promise<Appointment> {
+    const appointment = await this.findOne(id);
+
+    if (appointment.userId !== userId) {
+      throw new BadRequestException('You can only cancel your own appointments');
+    }
+
+    if (appointment.status === AppointmentStatus.CANCELLED) {
+      throw new BadRequestException('Appointment is already cancelled');
+    }
+
+    if (appointment.status === AppointmentStatus.COMPLETED) {
+      throw new BadRequestException('Cannot cancel a completed appointment');
+    }
+
+    appointment.status = AppointmentStatus.CANCELLED;
+    appointment.cancellationReason = cancelDto.reason;
+    appointment.cancelledAt = new Date();
+
+    const savedAppointment = await this.appointmentRepository.save(appointment);
+
+    // Emit Kafka event
+    const event: AppointmentCancelledEvent = {
+      appointmentId: savedAppointment.id,
+      userId,
+      hospitalId: savedAppointment.hospitalId,
+      doctorId: savedAppointment.doctorId,
+      cancellationReason: cancelDto.reason,
+      timestamp: new Date().toISOString(),
+    };
+
+    this.kafkaClient.emit(HealthcareEventTopics.APPOINTMENT_CANCELLED, event);
+
+    return savedAppointment;
+  }
+
+  async updateStatus(id: string, status: AppointmentStatus): Promise<Appointment> {
+    const appointment = await this.findOne(id);
+    appointment.status = status;
+    return this.appointmentRepository.save(appointment);
   }
 }
