@@ -1,4 +1,6 @@
+"use client";
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import { 
   LayoutDashboard, 
   ScrollText, 
@@ -50,6 +52,7 @@ const systemAlerts = [
 ];
 
 const AdminDashboard: React.FC = () => {
+  const router = useRouter();
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 flex">
       
@@ -63,18 +66,18 @@ const AdminDashboard: React.FC = () => {
              <ShieldCheck size={20} />
           </div>
           <div>
-            <h1 className="font-bold text-slate-900 leading-tight">NSP Admin</h1>
-            <p className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Government of India</p>
+            <h1 className="font-bold text-slate-900 leading-tight">Bharat Setu</h1>
+            <p className="text-[8px] uppercase tracking-wider text-slate-500 font-semibold">One Platform,  Many Services</p>
           </div>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 py-6 px-4 space-y-1">
-          <NavItem icon={<LayoutDashboard size={20} />} label="Dashboard" active />
-          <NavItem icon={<ScrollText size={20} />} label="Service Registry" />
-          <NavItem icon={<Server size={20} />} label="Audit Logs" />
-          <NavItem icon={<FileBarChart size={20} />} label="Analytics" />
-        </nav>
+          <nav className="flex-1 py-6 px-4 space-y-1">
+            <NavItem icon={<LayoutDashboard size={20} />} label="Dashboard" active />
+            <NavItem icon={<ScrollText size={20} />} label="Service Registry" />
+            <NavItem icon={<Server size={20} />} label="Audit Logs" />
+            <NavItem icon={<FileBarChart size={20} />} label="Analytics" />
+          </nav>
 
         {/* Bottom Actions */}
         <div className="p-4 border-t border-slate-100 space-y-1">

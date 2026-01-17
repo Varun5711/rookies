@@ -32,7 +32,7 @@ const LoginPage: React.FC = () => {
                 <Landmark size={24} strokeWidth={2} />
               </div>
               <div className="flex flex-col">
-                <span className="font-bold text-base leading-tight text-slate-900">National Service Portal</span>
+                <span className="font-bold text-base leading-tight text-slate-900">BharatSetu</span>
                 <span className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Government of India</span>
               </div>
             </div>
