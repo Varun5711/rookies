@@ -9,6 +9,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { CategoriesModule } from '../modules/categories/categories.module';
 import { GrievancesModule } from '../modules/grievances/grievances.module';
 import { HealthModule } from '../modules/health/health.module';
+import { AuthModule } from '../modules/auth/auth.module';
 
 /**
  * Urban Service Module
@@ -24,7 +25,7 @@ import { HealthModule } from '../modules/health/health.module';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    DatabaseModule.forRoot(),
+    DatabaseModule.forRoot({ serviceName: 'URBAN' }),
     RedisModule.forRootAsync({
       useFactory: (configService: ConfigService) => ({
         host: configService.get('REDIS_HOST', 'localhost'),
@@ -46,6 +47,7 @@ import { HealthModule } from '../modules/health/health.module';
       }),
       inject: [ConfigService],
     }),
+    AuthModule,
     CategoriesModule,
     GrievancesModule,
     HealthModule,
