@@ -33,7 +33,7 @@ const ServiceConfiguration: React.FC = () => {
               <div className="bg-blue-700 text-white p-1.5 rounded-lg">
                 <Landmark size={20} />
               </div>
-              <span className="font-bold text-lg tracking-tight">National Service Portal</span>
+              <span className="font-bold text-lg tracking-tight">BharatSetu</span>
             </div>
             
             <div className="flex items-center gap-4">
@@ -205,10 +205,10 @@ const ServiceConfiguration: React.FC = () => {
 
         {/* --- Footer Actions --- */}
         <div className="flex justify-between items-center pt-4">
-            <button onClick={() => router.push('/ServiceRegistry/NewService'  )} className="px-6 py-3 border border-slate-300 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors bg-white">
+            <button onClick={() => router.push('/service-registry/new-service'  )} className="px-6 py-3 border border-slate-300 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors bg-white">
                 Back
             </button>
-            <button onClick={() => router.push('/ServiceRegistry/NewService/Step2/Step3')} className="px-8 py-3 bg-blue-700 text-white rounded-lg text-sm font-bold hover:bg-blue-800 transition-colors shadow-lg shadow-blue-200 flex items-center gap-2">
+            <button onClick={() => router.push('/service-registry/new-service/step-2/step-3')} className="px-8 py-3 bg-blue-700 text-white rounded-lg text-sm font-bold hover:bg-blue-800 transition-colors shadow-lg shadow-blue-200 flex items-center gap-2">
                 Next Step <ArrowRight size={16} />
             </button>
         </div>

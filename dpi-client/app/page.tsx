@@ -50,7 +50,7 @@ const LandingPage: React.FC = () => {
                 <Globe size={16} />
                 English
               </button>
-              <button onClick={() => router.push('/LoginPage')} className="px-5 py-2 bg-blue-700 text-white rounded-lg text-sm font-semibold hover:bg-blue-800 transition-colors shadow-sm shadow-blue-200">
+              <button onClick={() => router.push('/login-page')} className="px-5 py-2 bg-blue-700 text-white rounded-lg text-sm font-semibold hover:bg-blue-800 transition-colors shadow-sm shadow-blue-200">
                 Login / Register
               </button>
             </div>
@@ -101,7 +101,7 @@ const LandingPage: React.FC = () => {
 
                 {/* Buttons */}
                 <div className="flex flex-wrap gap-4">
-                  <button onClick={() => router.push('/LoginPage')} className="flex items-center gap-2 px-6 py-3 bg-blue-700 text-white rounded-lg font-semibold shadow-lg shadow-blue-700/20 hover:bg-blue-800 transition-all transform hover:-translate-y-0.5">
+                  <button onClick={() => router.push('/login-page')} className="flex items-center gap-2 px-6 py-3 bg-blue-700 text-white rounded-lg font-semibold shadow-lg shadow-blue-700/20 hover:bg-blue-800 transition-all transform hover:-translate-y-0.5">
                     Get Started
                     <ArrowRight size={16} />
                   </button>
@@ -256,7 +256,7 @@ const LandingPage: React.FC = () => {
                  <Shield size={20} fill="currentColor" />
                </div>
                <div>
-                 <h4 className="font-bold text-slate-900">National Service Portal</h4>
+                 <h4 className="font-bold text-slate-900">BharatSetu</h4>
                  <p className="text-xs text-slate-500">Government of India</p>
                </div>
             </div>
@@ -311,7 +311,7 @@ const LandingPage: React.FC = () => {
 
           <div className="border-t border-slate-100 py-8 text-center text-xs text-slate-400">
             <p className="mb-2">Content Owned by Ministry of Electronics & IT, Government of India.</p>
-            <p>© 2024 National Service Portal. All rights reserved.</p>
+            <p>© 2024 BharatSetu. All rights reserved.</p>
             <div className="mt-4 flex justify-center gap-6">
               <span>Last Updated: 25 Oct 2024</span>
               <span>Version: 3.1.0</span>

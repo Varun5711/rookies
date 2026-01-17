@@ -113,7 +113,7 @@ const ServiceRegistry: React.FC = () => {
              <ShieldCheck size={24} fill="currentColor" className="text-blue-700/20" />
           </div>
           <div>
-            <h1 className="font-bold text-slate-900 leading-tight">National Service Portal</h1>
+            <h1 className="font-bold text-slate-900 leading-tight">BharatSetu</h1>
           </div>
         </div>
 
@@ -209,7 +209,7 @@ const ServiceRegistry: React.FC = () => {
                 <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50">
                   <Download size={16} /> Export Report
                 </button>
-                <button onClick={() => router.push("/ServiceRegistry/NewService")} className="flex items-center gap-2 px-4 py-2 bg-blue-700 text-white rounded-lg text-sm font-semibold hover:bg-blue-800 shadow-sm shadow-blue-200">
+                <button onClick={() => router.push("/service-registry/new-service")} className="flex items-center gap-2 px-4 py-2 bg-blue-700 text-white rounded-lg text-sm font-semibold hover:bg-blue-800 shadow-sm shadow-blue-200">
                   <Plus size={16} /> Register New Service
                 </button>
               </div>

@@ -107,7 +107,7 @@ const Healthcare: React.FC = () => {
               <div className="bg-blue-700 text-white p-1.5 rounded-lg">
                 <Landmark size={20} />
               </div>
-              <span className="font-bold text-lg tracking-tight">National Service Portal</span>
+              <span className="font-bold text-lg tracking-tight">BharatSetu</span>
             </div>
 
             {/* Nav (Middle) */}

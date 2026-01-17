@@ -31,7 +31,7 @@ const ReviewService: React.FC = () => {
               <div className="bg-blue-600 text-white p-1.5 rounded-lg">
                 <Landmark size={20} />
               </div>
-              <span className="font-bold text-lg tracking-tight">National Service Portal</span>
+              <span className="font-bold text-lg tracking-tight">BharatSetu</span>
             </div>
             
             <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
@@ -56,7 +56,7 @@ const ReviewService: React.FC = () => {
         
         {/* --- Top Navigation & Title --- */}
         <div className="mb-8">
-          <button onClick={() => {router.push('/ServiceRegistry/NewService/Step2')}} className="flex items-center gap-2 text-sm text-slate-500 hover:text-blue-700 mb-4 transition-colors">
+          <button onClick={() => {router.push('/service-registry/new-service/step-2')}} className="flex items-center gap-2 text-sm text-slate-500 hover:text-blue-700 mb-4 transition-colors">
             <ArrowLeft size={16} />
             Back to Step 2
           </button>
@@ -68,7 +68,7 @@ const ReviewService: React.FC = () => {
             </div>
             
             <div className="flex flex-col items-end gap-2">
-              <div className="text-sm font-medium text-blue-700">Step 4 of 4 <span className="text-slate-400 mx-2">|</span> Review & Launch</div>
+              <div className="text-sm font-medium text-blue-700">Step 3 of 3 <span className="text-slate-400 mx-2">|</span> Review & Launch</div>
               <div className="w-48 h-1.5 bg-slate-200 rounded-full overflow-hidden">
                 <div className="h-full bg-blue-600 w-full rounded-full"></div>
               </div>
