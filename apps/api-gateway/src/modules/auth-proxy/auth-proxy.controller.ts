@@ -6,6 +6,35 @@ import { AxiosRequestConfig, AxiosResponse } from 'axios';
 import { Public } from '@dpi/common';
 
 /**
+ * Standard API Response Format
+ */
+interface ApiResponse<T = any> {
+  success: boolean;
+  data: T;
+  meta: {
+    timestamp: string;
+    requestId: string;
+  };
+}
+
+/**
+ * Standard Error Response Format
+ */
+interface ApiErrorResponse {
+  success: false;
+  data: null;
+  error: {
+    code: string;
+    message: string;
+    details?: any;
+  };
+  meta: {
+    timestamp: string;
+    requestId: string;
+  };
+}
+
+/**
  * Auth Proxy Controller
  * Forwards all /api/auth/* requests to the Auth Service.
  *
@@ -66,34 +95,140 @@ export class AuthProxyController {
       // Forward response headers
       this.forwardResponseHeaders(response, res);
 
-      // Send response
-      res.status(response.status).send(response.data);
+      // Handle redirects (OAuth flows) - pass through as-is
+      if (response.status >= 300 && response.status < 400) {
+        res.status(response.status).send(response.data);
+        return;
+      }
+
+      // Check if response is JSON
+      const contentType = response.headers['content-type'] || '';
+      const isJson = contentType.includes('application/json');
+
+      if (isJson) {
+        // Parse JSON and wrap in standard format
+        const jsonData = JSON.parse(response.data.toString());
+        const wrappedResponse = this.wrapResponse(
+          jsonData,
+          response.status,
+          correlationId,
+        );
+        res.status(response.status).json(wrappedResponse);
+      } else {
+        // Pass through non-JSON responses
+        res.status(response.status).send(response.data);
+      }
     } catch (error: any) {
       this.logger.error(
         `[${correlationId}] Auth proxy error: ${error.message}`,
         error.stack,
       );
 
+      const timestamp = new Date().toISOString();
+
       if (error.code === 'ECONNREFUSED') {
-        res.status(503).json({
-          statusCode: 503,
-          message: 'Authentication service is unavailable',
-          error: 'Service Unavailable',
-        });
+        res.status(503).json(
+          this.createErrorResponse(
+            'SERVICE_UNAVAILABLE',
+            'Authentication service is unavailable',
+            correlationId,
+            timestamp,
+          ),
+        );
       } else if (error.code === 'ETIMEDOUT' || error.code === 'ECONNABORTED') {
-        res.status(504).json({
-          statusCode: 504,
-          message: 'Authentication service request timed out',
-          error: 'Gateway Timeout',
-        });
+        res.status(504).json(
+          this.createErrorResponse(
+            'GATEWAY_TIMEOUT',
+            'Authentication service request timed out',
+            correlationId,
+            timestamp,
+          ),
+        );
       } else {
-        res.status(502).json({
-          statusCode: 502,
-          message: 'Error forwarding request to authentication service',
-          error: 'Bad Gateway',
-        });
+        res.status(502).json(
+          this.createErrorResponse(
+            'BAD_GATEWAY',
+            'Error forwarding request to authentication service',
+            correlationId,
+            timestamp,
+          ),
+        );
       }
     }
+  }
+
+  /**
+   * Wrap response in standard format
+   */
+  private wrapResponse(
+    data: any,
+    status: number,
+    correlationId: string,
+  ): ApiResponse | ApiErrorResponse {
+    const timestamp = new Date().toISOString();
+
+    // Check if it's an error response (4xx or 5xx)
+    if (status >= 400) {
+      return this.createErrorResponse(
+        data.error || this.getErrorCode(status),
+        data.message || 'An error occurred',
+        correlationId,
+        timestamp,
+        data.details || data.errors,
+      );
+    }
+
+    // Success response
+    return {
+      success: true,
+      data: data,
+      meta: {
+        timestamp,
+        requestId: correlationId,
+      },
+    };
+  }
+
+  /**
+   * Create standardized error response
+   */
+  private createErrorResponse(
+    code: string,
+    message: string,
+    correlationId: string,
+    timestamp: string,
+    details?: any,
+  ): ApiErrorResponse {
+    return {
+      success: false,
+      data: null,
+      error: {
+        code,
+        message,
+        ...(details && { details }),
+      },
+      meta: {
+        timestamp,
+        requestId: correlationId,
+      },
+    };
+  }
+
+  /**
+   * Map HTTP status to error code
+   */
+  private getErrorCode(status: number): string {
+    const codeMap: Record<number, string> = {
+      400: 'BAD_REQUEST',
+      401: 'UNAUTHORIZED',
+      403: 'FORBIDDEN',
+      404: 'NOT_FOUND',
+      409: 'CONFLICT',
+      422: 'VALIDATION_ERROR',
+      429: 'RATE_LIMIT_EXCEEDED',
+      500: 'INTERNAL_ERROR',
+    };
+    return codeMap[status] || 'ERROR';
   }
 
   private buildTargetUrl(path: string, query: Request['query']): string {
