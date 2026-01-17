@@ -6,9 +6,38 @@ import { AxiosRequestConfig, AxiosResponse } from 'axios';
 import { ServiceInfo } from './interfaces/service-info.interface';
 
 /**
+ * Standard API Response Format
+ */
+interface ApiResponse<T = any> {
+  success: boolean;
+  data: T;
+  meta: {
+    timestamp: string;
+    requestId: string;
+  };
+}
+
+/**
+ * Standard Error Response Format
+ */
+interface ApiErrorResponse {
+  success: false;
+  data: null;
+  error: {
+    code: string;
+    message: string;
+    details?: any;
+  };
+  meta: {
+    timestamp: string;
+    requestId: string;
+  };
+}
+
+/**
  * Proxy Service
  * Handles HTTP forwarding from API Gateway to target services.
- * Preserves headers, body, query params, and handles streaming responses.
+ * Wraps all responses in a standardized format.
  */
 @Injectable()
 export class ProxyService {
@@ -64,34 +93,137 @@ export class ProxyService {
       // Forward response headers
       this.forwardResponseHeaders(response, res);
 
-      // Set status and send response
-      res.status(response.status).send(response.data);
+      // Check if response is JSON
+      const contentType = response.headers['content-type'] || '';
+      const isJson = contentType.includes('application/json');
+
+      if (isJson) {
+        // Parse JSON and wrap in standard format
+        const jsonData = JSON.parse(response.data.toString());
+        const wrappedResponse = this.wrapResponse(
+          jsonData,
+          response.status,
+          correlationId,
+        );
+        res.status(response.status).json(wrappedResponse);
+      } else {
+        // Pass through non-JSON responses (files, html, etc.)
+        res.status(response.status).send(response.data);
+      }
     } catch (error: any) {
       this.logger.error(
         `Proxy error for ${service.name}: ${error.message}`,
         error.stack,
       );
 
+      const timestamp = new Date().toISOString();
+
       if (error.code === 'ECONNREFUSED') {
-        res.status(503).json({
-          statusCode: 503,
-          message: `Service ${service.displayName} is unavailable`,
-          error: 'Service Unavailable',
-        });
+        res.status(503).json(
+          this.createErrorResponse(
+            'SERVICE_UNAVAILABLE',
+            `Service ${service.displayName} is unavailable`,
+            correlationId,
+            timestamp,
+          ),
+        );
       } else if (error.code === 'ETIMEDOUT' || error.code === 'ECONNABORTED') {
-        res.status(504).json({
-          statusCode: 504,
-          message: `Request to ${service.displayName} timed out`,
-          error: 'Gateway Timeout',
-        });
+        res.status(504).json(
+          this.createErrorResponse(
+            'GATEWAY_TIMEOUT',
+            `Request to ${service.displayName} timed out`,
+            correlationId,
+            timestamp,
+          ),
+        );
       } else {
-        res.status(502).json({
-          statusCode: 502,
-          message: `Error forwarding request to ${service.displayName}`,
-          error: 'Bad Gateway',
-        });
+        res.status(502).json(
+          this.createErrorResponse(
+            'BAD_GATEWAY',
+            `Error forwarding request to ${service.displayName}`,
+            correlationId,
+            timestamp,
+          ),
+        );
       }
     }
+  }
+
+  /**
+   * Wrap response in standard format
+   */
+  private wrapResponse(
+    data: any,
+    status: number,
+    correlationId: string,
+  ): ApiResponse | ApiErrorResponse {
+    const timestamp = new Date().toISOString();
+
+    // Check if it's an error response (4xx or 5xx)
+    if (status >= 400) {
+      return this.createErrorResponse(
+        data.error || this.getErrorCode(status),
+        data.message || 'An error occurred',
+        correlationId,
+        timestamp,
+        data.details || data.errors,
+      );
+    }
+
+    // Success response
+    return {
+      success: true,
+      data: data,
+      meta: {
+        timestamp,
+        requestId: correlationId,
+      },
+    };
+  }
+
+  /**
+   * Create standardized error response
+   */
+  private createErrorResponse(
+    code: string,
+    message: string,
+    correlationId: string,
+    timestamp: string,
+    details?: any,
+  ): ApiErrorResponse {
+    return {
+      success: false,
+      data: null,
+      error: {
+        code,
+        message,
+        ...(details && { details }),
+      },
+      meta: {
+        timestamp,
+        requestId: correlationId,
+      },
+    };
+  }
+
+  /**
+   * Map HTTP status to error code
+   */
+  private getErrorCode(status: number): string {
+    const codeMap: Record<number, string> = {
+      400: 'BAD_REQUEST',
+      401: 'UNAUTHORIZED',
+      403: 'FORBIDDEN',
+      404: 'NOT_FOUND',
+      409: 'CONFLICT',
+      422: 'VALIDATION_ERROR',
+      429: 'RATE_LIMIT_EXCEEDED',
+      500: 'INTERNAL_ERROR',
+      502: 'BAD_GATEWAY',
+      503: 'SERVICE_UNAVAILABLE',
+      504: 'GATEWAY_TIMEOUT',
+    };
+    return codeMap[status] || 'ERROR';
   }
 
   /**

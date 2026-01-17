@@ -1,6 +1,9 @@
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app/app.module';
+import { ResponseTransformInterceptor } from './interceptors/response-transform.interceptor';
+import { HttpExceptionFilter } from './filters/http-exception.filter';
+import { AllExceptionsFilter } from './filters/all-exceptions.filter';
 
 async function bootstrap() {
   const logger = new Logger('APIGateway');
@@ -17,9 +20,20 @@ async function bootstrap() {
     origin: process.env.CORS_ORIGIN || '*',
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'x-correlation-id'],
-    exposedHeaders: ['x-correlation-id', 'X-RateLimit-Limit', 'X-RateLimit-Remaining', 'X-RateLimit-Reset'],
+    exposedHeaders: [
+      'x-correlation-id',
+      'X-RateLimit-Limit',
+      'X-RateLimit-Remaining',
+      'X-RateLimit-Reset',
+    ],
     credentials: true,
   });
+
+  // Global exception filters (order matters - AllExceptionsFilter is fallback)
+  app.useGlobalFilters(new AllExceptionsFilter(), new HttpExceptionFilter());
+
+  // Global response interceptor for standardized response format
+  app.useGlobalInterceptors(new ResponseTransformInterceptor());
 
   // Validation pipeline
   app.useGlobalPipes(
