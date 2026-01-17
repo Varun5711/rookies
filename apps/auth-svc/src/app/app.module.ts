@@ -31,8 +31,8 @@ import { TokensModule } from '../modules/tokens/tokens.module';
       envFilePath: '.env',
     }),
 
-    // Database
-    DatabaseModule.forRoot(),
+    // Database (connects to ingenium_auth)
+    DatabaseModule.forRoot({ serviceName: 'AUTH' }),
 
     // Redis for caching and sessions
     RedisModule.register({

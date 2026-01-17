@@ -1,11 +1,15 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(npx nx run:*)",
+      "Bash(chmod:*)",
+      "Bash(docker-compose up:*)",
+      "Bash(docker exec:*)",
+      "Bash(docker-compose down:*)"
+    ]
+  },
   "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
     "shadcn"
-  ],
-  "permissions": {
-    "allow": [
-      "Bash(npx nx run:*)"
-    ]
-  }
+  ]
 }

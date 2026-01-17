@@ -43,13 +43,13 @@ export class TokensService {
 
     // Generate access token (15 min)
     const accessToken = this.jwtService.sign(payload, {
-      expiresIn: process.env.JWT_EXPIRES_IN || '15m',
+      expiresIn: (process.env.JWT_EXPIRES_IN || '15m') as any,
     });
 
     // Generate refresh token (7 days)
     const refreshTokenValue = this.jwtService.sign(
       { sub: user.id },
-      { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d' }
+      { expiresIn: (process.env.JWT_REFRESH_EXPIRES_IN || '7d') as any }
     );
 
     // Calculate expiration date

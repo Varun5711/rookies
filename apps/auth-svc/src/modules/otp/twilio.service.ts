@@ -1,5 +1,6 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import * as twilio from 'twilio';
+import { Twilio } from 'twilio';
 
 /**
  * Twilio Service
@@ -27,7 +28,7 @@ export class TwilioService {
         'Twilio credentials not configured. OTP functionality will not work.'
       );
     } else {
-      this.client = twilio(accountSid, authToken);
+      this.client = new Twilio(accountSid, authToken);
     }
   }
 

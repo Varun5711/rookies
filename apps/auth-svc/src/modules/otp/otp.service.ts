@@ -2,7 +2,8 @@ import {
   Injectable,
   BadRequestException,
   UnauthorizedException,
-  TooManyRequestsException,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { RedisService } from '@dpi/redis';
 import { TwilioService } from './twilio.service';
@@ -81,8 +82,9 @@ export class OtpService {
     // Check verification attempts
     if (session.attempts >= this.MAX_VERIFICATION_ATTEMPTS) {
       await this.redisService.del(sessionKey);
-      throw new TooManyRequestsException(
-        'Too many failed attempts. Please request a new OTP.'
+      throw new HttpException(
+        'Too many failed attempts. Please request a new OTP.',
+        HttpStatus.TOO_MANY_REQUESTS
       );
     }
 
@@ -111,12 +113,13 @@ export class OtpService {
    */
   private async checkRateLimit(mobile: string): Promise<void> {
     const rateLimitKey = `otp:ratelimit:${mobile}`;
-    const currentCount = await this.redisService.get(rateLimitKey);
+    const currentCount = await this.redisService.getClient().get(rateLimitKey);
 
     if (currentCount && parseInt(currentCount) >= this.MAX_OTP_REQUESTS) {
-      const ttl = await this.redisService.client.ttl(rateLimitKey);
-      throw new TooManyRequestsException(
-        `Too many OTP requests. Please try again in ${Math.ceil(ttl / 60)} minutes.`
+      const ttl = await this.redisService.getClient().ttl(rateLimitKey);
+      throw new HttpException(
+        `Too many OTP requests. Please try again in ${Math.ceil(ttl / 60)} minutes.`,
+        HttpStatus.TOO_MANY_REQUESTS
       );
     }
   }
