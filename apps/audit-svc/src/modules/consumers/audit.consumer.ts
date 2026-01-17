@@ -1,12 +1,16 @@
 import { Controller, Logger } from '@nestjs/common';
-import { EventPattern, Payload, Ctx, KafkaContext } from '@nestjs/microservices';
+import {
+  EventPattern,
+  Payload,
+  Ctx,
+  KafkaContext,
+} from '@nestjs/microservices';
 import {
   HealthcareEventTopics,
   AgricultureEventTopics,
   UrbanEventTopics,
 } from '@dpi/kafka';
 import { AuditService } from '../audit/audit.service';
-import { EventSource } from '../audit/entities/audit-log.entity';
 
 @Controller()
 export class AuditConsumer {
@@ -16,11 +20,14 @@ export class AuditConsumer {
 
   // Healthcare Events
   @EventPattern(HealthcareEventTopics.APPOINTMENT_BOOKED)
-  async handleAppointmentBooked(@Payload() data: any, @Ctx() context: KafkaContext) {
+  async handleAppointmentBooked(
+    @Payload() data: any,
+    @Ctx() context: KafkaContext,
+  ) {
     await this.logEvent(
       HealthcareEventTopics.APPOINTMENT_BOOKED,
       'healthcare-svc',
-      EventSource.HEALTHCARE,
+      'HEALTHCARE',
       data,
     );
   }
@@ -30,7 +37,7 @@ export class AuditConsumer {
     await this.logEvent(
       HealthcareEventTopics.APPOINTMENT_CANCELLED,
       'healthcare-svc',
-      EventSource.HEALTHCARE,
+      'HEALTHCARE',
       data,
     );
   }
@@ -40,7 +47,7 @@ export class AuditConsumer {
     await this.logEvent(
       HealthcareEventTopics.APPOINTMENT_UPDATED,
       'healthcare-svc',
-      EventSource.HEALTHCARE,
+      'HEALTHCARE',
       data,
     );
   }
@@ -51,7 +58,7 @@ export class AuditConsumer {
     await this.logEvent(
       AgricultureEventTopics.SCHEME_APPLIED,
       'agriculture-svc',
-      EventSource.AGRICULTURE,
+      'AGRICULTURE',
       data,
     );
   }
@@ -61,7 +68,7 @@ export class AuditConsumer {
     await this.logEvent(
       AgricultureEventTopics.SCHEME_APPROVED,
       'agriculture-svc',
-      EventSource.AGRICULTURE,
+      'AGRICULTURE',
       data,
     );
   }
@@ -71,7 +78,7 @@ export class AuditConsumer {
     await this.logEvent(
       AgricultureEventTopics.SCHEME_REJECTED,
       'agriculture-svc',
-      EventSource.AGRICULTURE,
+      'AGRICULTURE',
       data,
     );
   }
@@ -81,7 +88,7 @@ export class AuditConsumer {
     await this.logEvent(
       AgricultureEventTopics.ADVISORY_PUBLISHED,
       'agriculture-svc',
-      EventSource.AGRICULTURE,
+      'AGRICULTURE',
       data,
     );
   }
@@ -92,7 +99,7 @@ export class AuditConsumer {
     await this.logEvent(
       UrbanEventTopics.GRIEVANCE_SUBMITTED,
       'urban-svc',
-      EventSource.URBAN,
+      'URBAN',
       data,
     );
   }
@@ -102,7 +109,7 @@ export class AuditConsumer {
     await this.logEvent(
       UrbanEventTopics.GRIEVANCE_RESOLVED,
       'urban-svc',
-      EventSource.URBAN,
+      'URBAN',
       data,
     );
   }
@@ -112,7 +119,7 @@ export class AuditConsumer {
     await this.logEvent(
       UrbanEventTopics.GRIEVANCE_ESCALATED,
       'urban-svc',
-      EventSource.URBAN,
+      'URBAN',
       data,
     );
   }
@@ -122,7 +129,7 @@ export class AuditConsumer {
     await this.logEvent(
       UrbanEventTopics.GRIEVANCE_UPDATED,
       'urban-svc',
-      EventSource.URBAN,
+      'URBAN',
       data,
     );
   }
@@ -130,14 +137,14 @@ export class AuditConsumer {
   private async logEvent(
     eventType: string,
     serviceName: string,
-    eventSource: EventSource,
+    eventSource: string,
     eventData: any,
   ) {
     try {
       this.logger.log(`Logging event: ${eventType} from ${serviceName}`);
 
       await this.auditService.create({
-        eventType,
+        event_type: eventType,
         userId: eventData.userId,
         serviceName,
         eventSource,
@@ -147,7 +154,10 @@ export class AuditConsumer {
 
       this.logger.debug(`Event logged successfully: ${eventType}`);
     } catch (error) {
-      this.logger.error(`Failed to log event ${eventType}: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to log event ${eventType}: ${error.message}`,
+        error.stack,
+      );
     }
   }
 }

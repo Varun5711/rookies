@@ -1,10 +1,14 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { DatabaseModule } from '@dpi/database';
 import { RedisModule } from '@dpi/redis';
 import { KafkaModule } from '@dpi/kafka';
+import { JwtModule } from '@nestjs/jwt';
+import { APP_GUARD } from '@nestjs/core';
+import { JwtAuthGuard, RolesGuard } from '@dpi/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { AuthModule } from '../modules/auth/auth.module';
 import { RegistryModule } from '../modules/registry/registry.module';
 
 /**
@@ -42,10 +46,32 @@ import { RegistryModule } from '../modules/registry/registry.module';
       brokers: [process.env.KAFKA_BROKERS || 'localhost:9092'],
     }),
 
-    // Registry module
+    // JWT Module for token validation
+    JwtModule.registerAsync({
+      useFactory: (configService: ConfigService) => ({
+        secret: configService.get('JWT_SECRET', 'super-secret-key'),
+        signOptions: {
+          expiresIn: configService.get('JWT_EXPIRES_IN', '15m'),
+        },
+      }),
+      inject: [ConfigService],
+    }),
+
+    // Auth & Registry modules
+    AuthModule,
     RegistryModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
+    },
+  ],
 })
 export class AppModule {}

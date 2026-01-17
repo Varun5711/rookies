@@ -12,7 +12,7 @@ import {
 import { RegistryService } from './registry.service';
 import { RegisterServiceDto } from './dto/register-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
-import { Public } from '@dpi/common';
+import { Public, Roles, UserRole } from '@dpi/common';
 
 /**
  * Registry Controller
@@ -28,8 +28,9 @@ export class RegistryController {
   /**
    * Register a new service
    * POST /api/registry/services
+   * REQUIRES: PLATFORM_ADMIN role
    */
-  @Public()
+  @Roles(UserRole.PLATFORM_ADMIN)
   @Post('services')
   @HttpCode(HttpStatus.CREATED)
   async register(@Body() dto: RegisterServiceDto) {
@@ -90,8 +91,9 @@ export class RegistryController {
   /**
    * Update service
    * PUT /api/registry/services/:name
+   * REQUIRES: PLATFORM_ADMIN role
    */
-  @Public()
+  @Roles(UserRole.PLATFORM_ADMIN)
   @Put('services/:name')
   async update(@Param('name') name: string, @Body() dto: UpdateServiceDto) {
     const service = await this.registryService.updateService(name, dto);
@@ -106,8 +108,9 @@ export class RegistryController {
   /**
    * Update service status
    * PUT /api/registry/services/:name/status
+   * REQUIRES: PLATFORM_ADMIN role
    */
-  @Public()
+  @Roles(UserRole.PLATFORM_ADMIN)
   @Put('services/:name/status')
   async updateStatus(
     @Param('name') name: string,
@@ -125,8 +128,9 @@ export class RegistryController {
   /**
    * Delete (deregister) service
    * DELETE /api/registry/services/:name
+   * REQUIRES: PLATFORM_ADMIN role
    */
-  @Public()
+  @Roles(UserRole.PLATFORM_ADMIN)
   @Delete('services/:name')
   @HttpCode(HttpStatus.OK)
   async delete(@Param('name') name: string) {

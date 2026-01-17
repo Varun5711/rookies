@@ -1,13 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, FindOptionsWhere, Between, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
-import { AuditLog, EventSource } from './entities/audit-log.entity';
+import { AuditRepository } from './audit.repository';
+import { AuditLog } from './interfaces/audit-log.interface';
 
 export interface CreateAuditLogDto {
-  eventType: string;
+  event_type: string;
   userId?: string;
   serviceName: string;
-  eventSource: EventSource;
+  eventSource?: string;
   eventData: Record<string, any>;
   correlationId?: string;
   ipAddress?: string;
@@ -15,10 +14,10 @@ export interface CreateAuditLogDto {
 }
 
 export interface QueryAuditLogDto {
-  eventType?: string;
+  event_type?: string;
   userId?: string;
   serviceName?: string;
-  eventSource?: EventSource;
+  eventSource?: string;
   fromDate?: string;
   toDate?: string;
   page?: number;
@@ -29,23 +28,21 @@ export interface QueryAuditLogDto {
 export class AuditService {
   private readonly logger = new Logger(AuditService.name);
 
-  constructor(
-    @InjectRepository(AuditLog)
-    private readonly auditLogRepository: Repository<AuditLog>,
-  ) {}
+  constructor(private readonly auditRepository: AuditRepository) {}
 
-  async create(dto: CreateAuditLogDto): Promise<AuditLog> {
-    const auditLog = this.auditLogRepository.create({
-      ...dto,
-      eventTimestamp: new Date(),
+  async create(dto: CreateAuditLogDto): Promise<void> {
+    return this.auditRepository.create({
+      event_type: dto.event_type,
+      service_name: dto.serviceName,
+      user_id: dto.userId,
+      correlation_id: dto.correlationId,
+      event_data: dto.eventData,
     });
-
-    return this.auditLogRepository.save(auditLog);
   }
 
   async findAll(query: QueryAuditLogDto) {
     const {
-      eventType,
+      event_type,
       userId,
       serviceName,
       eventSource,
@@ -55,26 +52,15 @@ export class AuditService {
       limit = 50,
     } = query;
 
-    const where: FindOptionsWhere<AuditLog> = {};
-
-    if (eventType) where.eventType = eventType;
-    if (userId) where.userId = userId;
-    if (serviceName) where.serviceName = serviceName;
-    if (eventSource) where.eventSource = eventSource;
-
-    if (fromDate && toDate) {
-      where.eventTimestamp = Between(new Date(fromDate), new Date(toDate));
-    } else if (fromDate) {
-      where.eventTimestamp = MoreThanOrEqual(new Date(fromDate));
-    } else if (toDate) {
-      where.eventTimestamp = LessThanOrEqual(new Date(toDate));
-    }
-
-    const [logs, total] = await this.auditLogRepository.findAndCount({
-      where,
-      skip: (page - 1) * limit,
-      take: limit,
-      order: { eventTimestamp: 'DESC' },
+    const offset = (page - 1) * limit;
+    const logs = await this.auditRepository.findAll({
+      event_type,
+      user_id: userId,
+      service_name: serviceName,
+      from_date: fromDate,
+      to_date: toDate,
+      limit,
+      offset,
     });
 
     return {
@@ -82,63 +68,36 @@ export class AuditService {
       meta: {
         page,
         limit,
-        total,
-        totalPages: Math.ceil(total / limit),
+        total: logs.length,
+        totalPages: Math.ceil(logs.length / limit),
       },
     };
   }
 
   async findByUserId(userId: string, limit = 100): Promise<AuditLog[]> {
-    return this.auditLogRepository.find({
-      where: { userId },
-      order: { eventTimestamp: 'DESC' },
-      take: limit,
-    });
+    return this.auditRepository.getUserActivity(userId, { limit });
   }
 
   async findByEventType(eventType: string, limit = 100): Promise<AuditLog[]> {
-    return this.auditLogRepository.find({
-      where: { eventType },
-      order: { eventTimestamp: 'DESC' },
-      take: limit,
-    });
+    return this.auditRepository.findAll({ event_type: eventType, limit });
   }
 
   async getStats() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    const todayStr = today.toISOString().split('T')[0];
 
-    const [
-      totalLogs,
-      todayLogs,
-      eventTypeStats,
-      sourceStats,
-    ] = await Promise.all([
-      this.auditLogRepository.count(),
-      this.auditLogRepository.count({
-        where: { eventTimestamp: MoreThanOrEqual(today) },
-      }),
-      this.auditLogRepository
-        .createQueryBuilder('log')
-        .select('log.event_type', 'eventType')
-        .addSelect('COUNT(*)', 'count')
-        .groupBy('log.event_type')
-        .orderBy('count', 'DESC')
-        .limit(10)
-        .getRawMany(),
-      this.auditLogRepository
-        .createQueryBuilder('log')
-        .select('log.event_source', 'eventSource')
-        .addSelect('COUNT(*)', 'count')
-        .groupBy('log.event_source')
-        .getRawMany(),
+    const [totalLogs, todayLogs, eventCounts] = await Promise.all([
+      this.auditRepository.findAll({ limit: 1 }),
+      this.auditRepository.findAll({ from_date: todayStr, limit: 1 }),
+      this.auditRepository.getEventCounts({}),
     ]);
 
     return {
-      totalLogs,
-      todayLogs,
-      eventTypeStats,
-      sourceStats,
+      totalLogs: totalLogs.length,
+      todayLogs: todayLogs.length,
+      eventTypeStats: eventCounts,
+      sourceStats: [],
     };
   }
 }
