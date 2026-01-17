@@ -11,7 +11,7 @@ import { SchemesService } from './schemes.service';
 import { QuerySchemeDto } from './dto/query-scheme.dto';
 import { ApplySchemeDto } from './dto/apply-scheme.dto';
 import { QueryApplicationDto } from './dto/query-application.dto';
-import { CurrentUser, ICurrentUser, Public } from '@dpi/common';
+import { GetCurrentUser, CurrentUser, Public } from '@dpi/common';
 
 @Controller('schemes')
 export class SchemesController {
@@ -32,25 +32,25 @@ export class SchemesController {
   @Post(':id/apply')
   apply(
     @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: ICurrentUser,
+    @GetCurrentUser() user: CurrentUser,
     @Body() applyDto: ApplySchemeDto,
   ) {
-    return this.schemesService.apply(id, user.id, applyDto);
+    return this.schemesService.apply(id, user.sub, applyDto);
   }
 
   @Get('me/applications')
   findMyApplications(
-    @CurrentUser() user: ICurrentUser,
+    @GetCurrentUser() user: CurrentUser,
     @Query() query: QueryApplicationDto,
   ) {
-    return this.schemesService.findUserApplications(user.id, query);
+    return this.schemesService.findUserApplications(user.sub, query);
   }
 
   @Get('applications/:id')
   getApplicationStatus(
     @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: ICurrentUser,
+    @GetCurrentUser() user: CurrentUser,
   ) {
-    return this.schemesService.getApplicationStatus(id, user.id);
+    return this.schemesService.getApplicationStatus(id, user.sub);
   }
 }

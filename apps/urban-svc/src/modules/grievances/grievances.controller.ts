@@ -12,7 +12,7 @@ import { GrievancesService } from './grievances.service';
 import { CreateGrievanceDto } from './dto/create-grievance.dto';
 import { QueryGrievanceDto } from './dto/query-grievance.dto';
 import { EscalateGrievanceDto } from './dto/escalate-grievance.dto';
-import { CurrentUser, ICurrentUser } from '@dpi/common';
+import { GetCurrentUser, CurrentUser } from '@dpi/common';
 
 @Controller('grievances')
 export class GrievancesController {
@@ -20,10 +20,10 @@ export class GrievancesController {
 
   @Post()
   create(
-    @CurrentUser() user: ICurrentUser,
+    @GetCurrentUser() user: CurrentUser,
     @Body() createDto: CreateGrievanceDto,
   ) {
-    return this.grievancesService.create(user.id, createDto);
+    return this.grievancesService.create(user.sub, createDto);
   }
 
   @Get()
@@ -33,10 +33,10 @@ export class GrievancesController {
 
   @Get('me')
   findMyGrievances(
-    @CurrentUser() user: ICurrentUser,
+    @GetCurrentUser() user: CurrentUser,
     @Query() query: QueryGrievanceDto,
   ) {
-    return this.grievancesService.findByUser(user.id, query);
+    return this.grievancesService.findByUser(user.sub, query);
   }
 
   @Get(':id')
@@ -47,17 +47,17 @@ export class GrievancesController {
   @Get(':id/status')
   getStatus(
     @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: ICurrentUser,
+    @GetCurrentUser() user: CurrentUser,
   ) {
-    return this.grievancesService.getStatus(id, user.id);
+    return this.grievancesService.getStatus(id, user.sub);
   }
 
   @Put(':id/escalate')
   escalate(
     @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: ICurrentUser,
+    @GetCurrentUser() user: CurrentUser,
     @Body() escalateDto: EscalateGrievanceDto,
   ) {
-    return this.grievancesService.escalate(id, user.id, escalateDto);
+    return this.grievancesService.escalate(id, user.sub, escalateDto);
   }
 }
