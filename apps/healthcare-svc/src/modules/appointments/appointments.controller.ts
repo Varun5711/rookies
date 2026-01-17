@@ -12,7 +12,7 @@ import { AppointmentsService } from './appointments.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { QueryAppointmentDto } from './dto/query-appointment.dto';
 import { CancelAppointmentDto } from './dto/cancel-appointment.dto';
-import { CurrentUser, ICurrentUser } from '@dpi/common';
+import { GetCurrentUser, CurrentUser } from '@dpi/common';
 
 @Controller('appointments')
 export class AppointmentsController {
@@ -20,10 +20,10 @@ export class AppointmentsController {
 
   @Post()
   create(
-    @CurrentUser() user: ICurrentUser,
+    @GetCurrentUser() user: CurrentUser,
     @Body() createDto: CreateAppointmentDto,
   ) {
-    return this.appointmentsService.create(user.id, createDto);
+    return this.appointmentsService.create(user.sub, createDto);
   }
 
   @Get()
@@ -33,10 +33,10 @@ export class AppointmentsController {
 
   @Get('me')
   findMyAppointments(
-    @CurrentUser() user: ICurrentUser,
+    @GetCurrentUser() user: CurrentUser,
     @Query() query: QueryAppointmentDto,
   ) {
-    return this.appointmentsService.findByUser(user.id, query);
+    return this.appointmentsService.findByUser(user.sub, query);
   }
 
   @Get(':id')
@@ -47,9 +47,9 @@ export class AppointmentsController {
   @Put(':id/cancel')
   cancel(
     @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: ICurrentUser,
+    @GetCurrentUser() user: CurrentUser,
     @Body() cancelDto: CancelAppointmentDto,
   ) {
-    return this.appointmentsService.cancel(id, user.id, cancelDto);
+    return this.appointmentsService.cancel(id, user.sub, cancelDto);
   }
 }
