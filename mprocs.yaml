@@ -1,0 +1,44 @@
+procs:
+  infra:
+    shell: "docker-compose -f infra/docker/docker-compose.yml up"
+    cwd: "."
+
+  api-gateway:
+    shell: "bunx nx serve api-gateway"
+    env:
+      NODE_ENV: "development"
+
+  auth-svc:
+    shell: "bunx nx serve auth-svc"
+    env:
+      NODE_ENV: "development"
+
+  service-registry:
+    shell: "bunx nx serve service-registry"
+    env:
+      NODE_ENV: "development"
+
+  notification-svc:
+    shell: "bunx nx serve notification-svc"
+    env:
+      NODE_ENV: "development"
+
+  audit-svc:
+    shell: "bunx nx serve audit-svc"
+    env:
+      NODE_ENV: "development"
+
+  agriculture-svc:
+    shell: "bunx nx serve agriculture-svc"
+    env:
+      NODE_ENV: "development"
+
+  healthcare-svc:
+    shell: "bunx nx serve healthcare-svc"
+    env:
+      NODE_ENV: "development"
+
+  urban-svc:
+    shell: "bunx nx serve urban-svc"
+    env:
+      NODE_ENV: "development"

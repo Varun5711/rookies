@@ -16,7 +16,9 @@
     "baseUrl": ".",
     "paths": {
       "@dpi/kafka": ["libs/kafka/src/index.ts"],
-      "@dpi/redis": ["libs/redis/src/index.ts"]
+      "@dpi/redis": ["libs/redis/src/index.ts"],
+      "@dpi/database": ["libs/database/src/index.ts"],
+      "@dpi/common": ["libs/common/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]
