@@ -25,31 +25,34 @@ import {
 } from 'lucide-react';
 
 const initialServices = [
-  {
-    id: 1,
-    category: 'Health',
-    title: 'Healthcare Services',
-    description: 'Book OPD appointments, access digital health records (ABHA), and enroll in national insurance schemes securely.',
-    icon: <BriefcaseMedical size={24} />,
-    bookmarked: false,
-  },
-  {
-    id: 2,
-    category: 'Farming',
-    title: 'Agriculture Support',
-    description: 'Apply for PM-KISAN subsidies, check real-time market prices (Mandi), and request Soil Health Cards.',
-    icon: <Tractor size={24} />,
-    bookmarked: true,
-  },
-  {
-    id: 3,
-    category: 'Civic',
-    title: 'Urban Grievance Redressal',
-    description: 'File complaints regarding water, roads, or sanitation, track resolution status, and provide feedback.',
-    icon: <Building2 size={24} />,
-    bookmarked: false,
-  },
-];
+ {
+      id: 1,
+      title: "Healthcare Services",
+      category: "Health",
+      description: "Book OPD appointments, access digital health records (ABHA), and enroll in national insurance schemes securely.",
+      icon: <BriefcaseMedical size={24} />,
+      bookmarked: false,
+      route: "/healthcare" // <--- Route for Healthcare
+    },
+    {
+      id: 2,
+      title: "Agriculture Support",
+      category: "Farming",
+      description: "Apply for PM-KISAN subsidies, check real-time market prices (Mandi), and request Soil Health Cards.",
+      icon: <Tractor size={24} />,
+      bookmarked: false,
+      route: "/agriculture" // <--- Route for Agriculture
+    },
+    {
+      id: 3,
+      title: "Urban Grievance Redressal",
+      category: "Civic",
+      description: "File complaints regarding water, roads, or sanitation, track resolution status, and provide feedback.",
+      icon: <Building2 size={24} />,
+      bookmarked: false,
+      route: "/urban-grievances" // <--- Route for Grievance/Civic
+    }
+  ];
 
 const notifications = [
   {
@@ -72,12 +75,8 @@ const CitizenDashboard: React.FC = () => {
   const [isProfileOpen, setProfileOpen] = useState(false);
   const [isNotificationsOpen, setNotificationsOpen] = useState(false);
   const router = useRouter();
-  const toggleBookmark = (id: number) => {
-    setServices(
-      services.map((service) =>
-        service.id === id ? { ...service, bookmarked: !service.bookmarked } : service
-      )
-    );
+ const toggleBookmark = (id: number) => {
+    setServices(services.map(s => s.id === id ? { ...s, bookmarked: !s.bookmarked } : s));
   };
 
 
@@ -241,32 +240,49 @@ const CitizenDashboard: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {services
-              .sort((a, b) => (b.bookmarked ? 1 : -1) - (a.bookmarked ? 1 : -1))
-              .map((service) => (
-              <div key={service.id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden flex flex-col hover:shadow-lg transition-shadow">
-                <div className={`h-32 ${service.bookmarked ? 'bg-amber-50' : 'bg-blue-50'} flex items-center justify-center`}>
-                  <div className={`w-12 h-12 ${service.bookmarked ? 'bg-amber-500' : 'bg-blue-600'} rounded-lg flex items-center justify-center text-white shadow-lg ${service.bookmarked ? 'shadow-amber-200' : 'shadow-blue-200'}`}>
-                    {service.icon}
-                  </div>
-                </div>
-                <div className="p-6 flex-1 flex flex-col">
-                  <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase ${service.bookmarked ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'} w-fit mb-3`}>{service.category}</span>
-                  <h3 className="text-lg font-bold text-slate-900 mb-2">{service.title}</h3>
-                  <p className="text-sm text-slate-500 mb-6 flex-1">
-                    {service.description}
-                  </p>
-                  <div className="flex items-center gap-3 mt-auto">
-                    <button onClick={() => router.push('/healthcare')} className="flex-1 bg-blue-700 text-white py-2.5 rounded-lg text-sm font-semibold hover:bg-blue-800 transition-colors">
-                      View Services
-                    </button>
-                    <button onClick={() => toggleBookmark(service.id)} className={`p-2.5 rounded-lg transition-colors ${service.bookmarked ? 'text-amber-500 bg-amber-100' : 'text-slate-400 hover:text-blue-700 hover:bg-blue-50'}`}>
-                      <Bookmark size={20} fill={service.bookmarked ? 'currentColor' : 'none'} />
-                    </button>
-                  </div>
+           {services
+          .sort((a, b) => (b.bookmarked ? 1 : -1) - (a.bookmarked ? 1 : -1))
+          .map((service) => (
+            <div key={service.id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden flex flex-col hover:shadow-lg transition-shadow">
+              
+              {/* Icon Header */}
+              <div className={`h-32 ${service.bookmarked ? 'bg-amber-50' : 'bg-blue-50'} flex items-center justify-center`}>
+                <div className={`w-12 h-12 ${service.bookmarked ? 'bg-amber-500' : 'bg-blue-600'} rounded-lg flex items-center justify-center text-white shadow-lg ${service.bookmarked ? 'shadow-amber-200' : 'shadow-blue-200'}`}>
+                  {service.icon}
                 </div>
               </div>
-            ))}
+
+              {/* Content Body */}
+              <div className="p-6 flex-1 flex flex-col">
+                <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase ${service.bookmarked ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'} w-fit mb-3`}>
+                  {service.category}
+                </span>
+                
+                <h3 className="text-lg font-bold text-slate-900 mb-2">{service.title}</h3>
+                
+                <p className="text-sm text-slate-500 mb-6 flex-1">
+                  {service.description}
+                </p>
+
+                <div className="flex items-center gap-3 mt-auto">
+                  {/* 2. Update the onClick to use service.route */}
+                  <button 
+                    onClick={() => router.push(service.route)} 
+                    className="flex-1 bg-blue-700 text-white py-2.5 rounded-lg text-sm font-semibold hover:bg-blue-800 transition-colors"
+                  >
+                    View Services
+                  </button>
+                  
+                  <button 
+                    onClick={() => toggleBookmark(service.id)} 
+                    className={`p-2.5 rounded-lg transition-colors ${service.bookmarked ? 'text-amber-500 bg-amber-100' : 'text-slate-400 hover:text-blue-700 hover:bg-blue-50'}`}
+                  >
+                    <Bookmark size={20} fill={service.bookmarked ? 'currentColor' : 'none'} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
           </div>
         </section>
 
