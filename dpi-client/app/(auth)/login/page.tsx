@@ -61,11 +61,21 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       const response = await authApi.verifyOtp(mobile, data.otp);
+      
+      // Ensure user object has roles array
+      if (!response.user || !response.user.roles || !Array.isArray(response.user.roles)) {
+        console.error('Invalid user response:', response);
+        toast.error('Invalid user data received');
+        return;
+      }
+
       setAuth(response.user, response.tokens.accessToken, response.tokens.refreshToken);
       toast.success('Login successful!');
 
-      // ✅ Redirect based on role
-      if (response.user.roles.includes(UserRole.PLATFORM_ADMIN)) {
+      // ✅ Redirect based on role - check if user is admin
+      const isAdmin = response.user.roles.includes(UserRole.PLATFORM_ADMIN);
+      
+      if (isAdmin) {
         router.push('/admin/dashboard');
       } else {
         router.push('/dashboard');

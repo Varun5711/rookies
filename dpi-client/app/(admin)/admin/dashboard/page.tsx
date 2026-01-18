@@ -87,13 +87,23 @@ function DashboardContent() {
                 </div>
             </div>
 
-            {/* Error Banner */}
-            {errors.general && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
-                    <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-                    <div>
-                        <p className="font-medium text-red-900">Error loading dashboard</p>
-                        <p className="text-sm text-red-700 mt-1">{errors.general}</p>
+            {/* Error Banner - Show any errors */}
+            {(errors.general || errors.stats || errors.trends || errors.health) && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                        <AlertCircle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                            <p className="font-medium text-yellow-900 mb-2">Some data could not be loaded</p>
+                            <div className="space-y-1 text-sm text-yellow-800">
+                                {errors.general && <p>• General: {errors.general}</p>}
+                                {errors.stats && <p>• Statistics: {errors.stats}</p>}
+                                {errors.trends && <p>• Trends: {errors.trends}</p>}
+                                {errors.health && <p>• Service Health: {errors.health}</p>}
+                            </div>
+                            <p className="text-xs text-yellow-700 mt-2">
+                                This might be due to services not being available. The dashboard will continue to show available data.
+                            </p>
+                        </div>
                     </div>
                 </div>
             )}

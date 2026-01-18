@@ -21,15 +21,26 @@ export function useAdminCheck() {
       return;
     }
 
+    // Ensure roles array exists and check for admin role
+    const hasAdminRole = 
+      user.roles && 
+      Array.isArray(user.roles) && 
+      user.roles.includes(UserRole.PLATFORM_ADMIN);
+
     // Not an admin - redirect to citizen dashboard
-    if (!user.roles.includes(UserRole.PLATFORM_ADMIN)) {
+    if (!hasAdminRole) {
       router.push('/dashboard');
       return;
     }
   }, [user, isAuthenticated, isLoading, router]);
 
+  const isAdmin = 
+    user?.roles && 
+    Array.isArray(user.roles) && 
+    user.roles.includes(UserRole.PLATFORM_ADMIN) || false;
+
   return {
-    isAdmin: user?.roles.includes(UserRole.PLATFORM_ADMIN) || false,
+    isAdmin,
     isLoading,
     user,
   };

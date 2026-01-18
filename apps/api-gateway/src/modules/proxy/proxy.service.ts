@@ -98,14 +98,36 @@ export class ProxyService {
       const isJson = contentType.includes('application/json');
 
       if (isJson) {
-        // Parse JSON and wrap in standard format
+        // Parse JSON from target service
         const jsonData = JSON.parse(response.data.toString());
-        const wrappedResponse = this.wrapResponse(
-          jsonData,
-          response.status,
-          correlationId,
-        );
-        res.status(response.status).json(wrappedResponse);
+
+        // Check if the response is already wrapped by the backend service
+        // Backend services return: { data: ..., meta: { ... } }
+        // We don't want to double-wrap this
+        const isAlreadyWrapped =
+          jsonData.data !== undefined && jsonData.meta !== undefined;
+
+        if (isAlreadyWrapped) {
+          // Pass through already-wrapped responses
+          // Just add our standard success wrapper around it
+          const wrappedResponse = {
+            success: true,
+            data: jsonData,
+            meta: {
+              timestamp: new Date().toISOString(),
+              requestId: correlationId,
+            },
+          };
+          res.status(response.status).json(wrappedResponse);
+        } else {
+          // Wrap non-wrapped responses in standard format
+          const wrappedResponse = this.wrapResponse(
+            jsonData,
+            response.status,
+            correlationId,
+          );
+          res.status(response.status).json(wrappedResponse);
+        }
       } else {
         // Pass through non-JSON responses (files, html, etc.)
         res.status(response.status).send(response.data);
@@ -119,32 +141,38 @@ export class ProxyService {
       const timestamp = new Date().toISOString();
 
       if (error.code === 'ECONNREFUSED') {
-        res.status(503).json(
-          this.createErrorResponse(
-            'SERVICE_UNAVAILABLE',
-            `Service ${service.displayName} is unavailable`,
-            correlationId,
-            timestamp,
-          ),
-        );
+        res
+          .status(503)
+          .json(
+            this.createErrorResponse(
+              'SERVICE_UNAVAILABLE',
+              `Service ${service.displayName} is unavailable`,
+              correlationId,
+              timestamp,
+            ),
+          );
       } else if (error.code === 'ETIMEDOUT' || error.code === 'ECONNABORTED') {
-        res.status(504).json(
-          this.createErrorResponse(
-            'GATEWAY_TIMEOUT',
-            `Request to ${service.displayName} timed out`,
-            correlationId,
-            timestamp,
-          ),
-        );
+        res
+          .status(504)
+          .json(
+            this.createErrorResponse(
+              'GATEWAY_TIMEOUT',
+              `Request to ${service.displayName} timed out`,
+              correlationId,
+              timestamp,
+            ),
+          );
       } else {
-        res.status(502).json(
-          this.createErrorResponse(
-            'BAD_GATEWAY',
-            `Error forwarding request to ${service.displayName}`,
-            correlationId,
-            timestamp,
-          ),
-        );
+        res
+          .status(502)
+          .json(
+            this.createErrorResponse(
+              'BAD_GATEWAY',
+              `Error forwarding request to ${service.displayName}`,
+              correlationId,
+              timestamp,
+            ),
+          );
       }
     }
   }
@@ -299,10 +327,7 @@ export class ProxyService {
   /**
    * Forward response headers from target service
    */
-  private forwardResponseHeaders(
-    response: AxiosResponse,
-    res: Response,
-  ): void {
+  private forwardResponseHeaders(response: AxiosResponse, res: Response): void {
     const headersToForward = [
       'content-type',
       'cache-control',
