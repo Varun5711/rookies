@@ -42,6 +42,7 @@ const LandingPage: React.FC = () => {
 
             {/* Desktop Navigation Links */}
             <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
+              <a href="/services" className="hover:text-blue-700 transition-colors">Services</a>
             </nav>
 
             {/* Right Actions */}
