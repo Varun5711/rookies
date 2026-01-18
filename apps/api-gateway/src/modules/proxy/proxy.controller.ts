@@ -73,7 +73,10 @@ export class ProxyController {
 
     // Verify admin role
     const user = (req as any).user as CurrentUser | undefined;
-    if (!user || !user.roles.includes(UserRole.PLATFORM_ADMIN)) {
+    this.logger.debug(`[${correlationId}] Admin route - User: ${user?.sub}, Roles: ${JSON.stringify(user?.roles)}`);
+
+    if (!user || !user.roles || !user.roles.includes(UserRole.PLATFORM_ADMIN)) {
+      this.logger.warn(`[${correlationId}] Admin access denied - User roles: ${JSON.stringify(user?.roles)}`);
       throw new ForbiddenException('Admin access required');
     }
 

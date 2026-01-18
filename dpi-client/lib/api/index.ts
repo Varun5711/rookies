@@ -7,3 +7,5 @@ export { urbanApi } from './urban';
 export { adminApi } from './admin';
 export { citizenApi } from './citizen';
 export { platformApi } from './platform';
+export { registryApi } from './registry';
+export { auditApi } from './audit';

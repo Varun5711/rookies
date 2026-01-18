@@ -1,3 +1,6 @@
+// Re-export healthcare constants
+export * from './constants/healthcare';
+
 // States for dropdown filters (acceptable hardcoding - static geographic data)
 export const INDIAN_STATES = [
   'Andhra Pradesh',

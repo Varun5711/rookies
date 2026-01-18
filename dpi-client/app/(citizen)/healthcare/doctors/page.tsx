@@ -13,8 +13,9 @@ import { Pagination } from '@/components/ui/Pagination';
 import { CardSkeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { healthcareApi } from '@/lib/api/healthcare';
-import { Doctor, SPECIALIZATION_LABELS, Specialization } from '@/lib/types/healthcare';
+import { Doctor, Specialization } from '@/lib/types/healthcare';
 import { formatCurrency } from '@/lib/utils/formatCurrency';
+import { SPECIALIZATION_OPTIONS, SPECIALIZATION_LABELS } from '@/lib/constants/healthcare';
 
 export default function DoctorsPage() {
   const [page, setPage] = useState(1);
@@ -28,11 +29,6 @@ export default function DoctorsPage() {
 
   const doctors = data?.data || [];
   const meta = data?.meta || { page: 1, totalPages: 1, total: 0, limit: 9 };
-
-  const specializationOptions = Object.entries(SPECIALIZATION_LABELS).map(([value, label]) => ({
-    value,
-    label,
-  }));
 
   return (
     <div className="space-y-6">
@@ -57,7 +53,7 @@ export default function DoctorsPage() {
           </div>
           <Select
             placeholder="All Specializations"
-            options={[{ value: '', label: 'All Specializations' }, ...specializationOptions]}
+            options={SPECIALIZATION_OPTIONS}
             value={specialization}
             onChange={(e) => setSpecialization(e.target.value)}
           />

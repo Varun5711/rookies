@@ -7,6 +7,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'outline' | 'danger' | 'ghost';
   size?: 'sm' | 'md' | 'lg';
   isLoading?: boolean;
+  loading?: boolean; // Alias for isLoading
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
 }
@@ -29,6 +30,7 @@ export function Button({
   variant = 'primary',
   size = 'md',
   isLoading = false,
+  loading = false,
   leftIcon,
   rightIcon,
   children,
@@ -36,6 +38,8 @@ export function Button({
   disabled,
   ...props
 }: ButtonProps) {
+  const showLoading = isLoading || loading;
+
   return (
     <button
       className={`
@@ -43,16 +47,16 @@ export function Button({
         transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed
         ${variants[variant]} ${sizes[size]} ${className}
       `}
-      disabled={disabled || isLoading}
+      disabled={disabled || showLoading}
       {...props}
     >
-      {isLoading ? (
+      {showLoading ? (
         <Loader2 className="h-4 w-4 animate-spin" />
       ) : leftIcon ? (
         leftIcon
       ) : null}
       {children}
-      {rightIcon && !isLoading && rightIcon}
+      {rightIcon && !showLoading && rightIcon}
     </button>
   );
 }

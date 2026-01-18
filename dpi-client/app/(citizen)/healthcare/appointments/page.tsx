@@ -20,7 +20,8 @@ import { Textarea } from '@/components/ui/Textarea';
 import { CardSkeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { healthcareApi } from '@/lib/api/healthcare';
-import { Appointment, SPECIALIZATION_LABELS } from '@/lib/types/healthcare';
+import { Appointment } from '@/lib/types/healthcare';
+import { SPECIALIZATION_LABELS } from '@/lib/constants/healthcare';
 import { formatDate, formatTime } from '@/lib/utils/formatDate';
 
 type TabType = 'upcoming' | 'past' | 'cancelled';
@@ -54,7 +55,8 @@ export default function AppointmentsPage() {
     },
   });
 
-  const appointments = data?.data || [];
+  // Handle different response structures
+  const appointments = Array.isArray(data?.data) ? data.data : [];
 
   const filteredAppointments = appointments.filter((apt: Appointment) => {
     const aptDate = new Date(apt.appointmentDate);

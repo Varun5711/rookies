@@ -41,7 +41,7 @@ const PREDEFINED_SERVICES = [
     owner: 'platform-admin',
     tags: 'analytics,dashboard',
     isPublic: false,
-    requiredRoles: 'PLATFORM_ADMIN',
+    requiredRoles: 'platform_admin',
   },
   {
     name: 'healthcare',
@@ -53,7 +53,7 @@ const PREDEFINED_SERVICES = [
     owner: 'health-ministry',
     tags: 'healthcare,hospitals',
     isPublic: false,
-    requiredRoles: 'CITIZEN',
+    requiredRoles: 'citizen,platform_admin',
   },
   {
     name: 'agriculture',
@@ -65,7 +65,7 @@ const PREDEFINED_SERVICES = [
     owner: 'agriculture-ministry',
     tags: 'agriculture,schemes',
     isPublic: false,
-    requiredRoles: 'CITIZEN',
+    requiredRoles: 'citizen,platform_admin',
   },
   {
     name: 'urban',
@@ -77,7 +77,7 @@ const PREDEFINED_SERVICES = [
     owner: 'urban-ministry',
     tags: 'urban,grievances',
     isPublic: false,
-    requiredRoles: 'CITIZEN',
+    requiredRoles: 'citizen,platform_admin',
   },
   {
     name: 'audit',
@@ -89,7 +89,7 @@ const PREDEFINED_SERVICES = [
     owner: 'platform-admin',
     tags: 'audit,logs',
     isPublic: false,
-    requiredRoles: 'PLATFORM_ADMIN',
+    requiredRoles: 'platform_admin',
   },
   {
     name: 'service-registry',
