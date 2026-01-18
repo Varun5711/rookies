@@ -22,6 +22,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { useAuthStore } from '@/lib/store/authStore';
+import { DEFAULT_NOTIFICATION_SETTINGS } from '@/lib/constants';
 
 const profileSchema = z.object({
   fullName: z.string().min(1, 'Name is required'),
@@ -34,6 +35,15 @@ export default function ProfilePage() {
   const router = useRouter();
   const { user, logout } = useAuthStore();
   const [isEditing, setIsEditing] = useState(false);
+
+  // Notification settings with localStorage persistence
+  const [notificationSettings, setNotificationSettings] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('notification_settings');
+      return saved ? JSON.parse(saved) : DEFAULT_NOTIFICATION_SETTINGS;
+    }
+    return DEFAULT_NOTIFICATION_SETTINGS;
+  });
 
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
@@ -54,13 +64,14 @@ export default function ProfilePage() {
     setIsEditing(false);
   };
 
-  const notificationSettings = [
-    { id: 'appointments', label: 'Appointment Reminders', enabled: true },
-    { id: 'applications', label: 'Application Status Updates', enabled: true },
-    { id: 'grievances', label: 'Grievance Updates', enabled: true },
-    { id: 'advisories', label: 'Crop Advisories', enabled: false },
-    { id: 'marketing', label: 'News & Updates', enabled: false },
-  ];
+  const handleToggleNotification = (settingId: string) => {
+    const updated = notificationSettings.map((s: any) =>
+      s.id === settingId ? { ...s, enabled: !s.enabled } : s
+    );
+    setNotificationSettings(updated);
+    localStorage.setItem('notification_settings', JSON.stringify(updated));
+    toast.success('Notification preferences updated');
+  };
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
@@ -201,7 +212,7 @@ export default function ProfilePage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {notificationSettings.map((setting) => (
+            {notificationSettings.map((setting: any) => (
               <div
                 key={setting.id}
                 className="flex items-center justify-between py-3 border-b border-slate-100 last:border-0"
@@ -210,7 +221,8 @@ export default function ProfilePage() {
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
                     type="checkbox"
-                    defaultChecked={setting.enabled}
+                    checked={setting.enabled}
+                    onChange={() => handleToggleNotification(setting.id)}
                     className="sr-only peer"
                   />
                   <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>

@@ -8,6 +8,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ProxyModule } from '../modules/proxy/proxy.module';
 import { AuthProxyModule } from '../modules/auth-proxy/auth-proxy.module';
+import { RegistryProxyModule } from '../modules/registry-proxy/registry-proxy.module';
 import { CorrelationIdMiddleware } from '../middleware/correlation-id.middleware';
 import { RateLimitMiddleware } from '../middleware/rate-limit.middleware';
 import { JwtStrategy } from '../strategies/jwt.strategy';
@@ -45,6 +46,9 @@ import { JwtStrategy } from '../strategies/jwt.strategy';
 
     // Auth proxy module - forwards /api/auth/* to auth-svc
     AuthProxyModule,
+
+    // Registry proxy module - forwards /api/registry/* to service-registry
+    RegistryProxyModule,
 
     // Dynamic proxy module - forwards /api/services/* to registered services
     ProxyModule,

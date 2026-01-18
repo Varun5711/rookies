@@ -14,6 +14,7 @@ import { CardSkeleton } from '@/components/ui/Skeleton';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { healthcareApi } from '@/lib/api/healthcare';
 import { Hospital } from '@/lib/types/healthcare';
+import { INDIAN_STATES } from '@/lib/constants';
 
 export default function HospitalsPage() {
   const [page, setPage] = useState(1);
@@ -64,10 +65,7 @@ export default function HospitalsPage() {
             placeholder="All States"
             options={[
               { value: '', label: 'All States' },
-              { value: 'Maharashtra', label: 'Maharashtra' },
-              { value: 'Delhi', label: 'Delhi' },
-              { value: 'Karnataka', label: 'Karnataka' },
-              { value: 'Tamil Nadu', label: 'Tamil Nadu' },
+              ...INDIAN_STATES.map((state) => ({ value: state, label: state })),
             ]}
             value={state}
             onChange={(e) => setState(e.target.value)}

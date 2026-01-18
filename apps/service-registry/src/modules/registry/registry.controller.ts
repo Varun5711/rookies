@@ -18,8 +18,9 @@ import { Public, Roles, UserRole } from '@dpi/common';
  * Registry Controller
  * Handles service registration and discovery endpoints
  *
- * All endpoints are public for now (can be secured later)
- * In production, only admins should register/modify services
+ * POST /api/registry/services is public for development convenience
+ * Other operations (PUT, DELETE) require PLATFORM_ADMIN role
+ * In production, all operations should be secured
  */
 @Controller('registry')
 export class RegistryController {
@@ -28,9 +29,9 @@ export class RegistryController {
   /**
    * Register a new service
    * POST /api/registry/services
-   * REQUIRES: PLATFORM_ADMIN role
+   * PUBLIC for development - can be secured with @Roles(UserRole.PLATFORM_ADMIN) for production
    */
-  @Roles(UserRole.PLATFORM_ADMIN)
+  @Public()
   @Post('services')
   @HttpCode(HttpStatus.CREATED)
   async register(@Body() dto: RegisterServiceDto) {
@@ -114,7 +115,7 @@ export class RegistryController {
   @Put('services/:name/status')
   async updateStatus(
     @Param('name') name: string,
-    @Body('status') status: 'ACTIVE' | 'INACTIVE' | 'MAINTENANCE'
+    @Body('status') status: 'ACTIVE' | 'INACTIVE' | 'MAINTENANCE',
   ) {
     const service = await this.registryService.updateService(name, { status });
 

@@ -3,6 +3,7 @@
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useQuery } from '@tanstack/react-query';
 import {
   CalendarDays,
   FileText,
@@ -19,10 +20,26 @@ import { Button } from '@/components/ui/Button';
 import { StatusBadge } from '@/components/ui/Badge';
 import { useAuthStore } from '@/lib/store/authStore';
 import { UserRole } from '@/lib/types/auth';
+import { citizenApi } from '@/lib/api/citizen';
 
 export default function DashboardPage() {
   const router = useRouter();
   const { user } = useAuthStore();
+
+  // Fetch citizen stats and recent activity
+  const { data: stats, isLoading: statsLoading } = useQuery({
+    queryKey: ['citizenStats'],
+    queryFn: () => citizenApi.getDashboardStats(),
+    refetchInterval: 60000, // 1 minute
+    retry: 2,
+  });
+
+  const { data: recentActivityData, isLoading: activityLoading } = useQuery({
+    queryKey: ['recentActivity'],
+    queryFn: () => citizenApi.getRecentActivity(3),
+    refetchInterval: 60000,
+    retry: 2,
+  });
 
   // ✅ BLOCK ADMINS - Redirect to admin dashboard
   useEffect(() => {
@@ -34,21 +51,21 @@ export default function DashboardPage() {
   const quickStats = [
     {
       label: 'Active Appointments',
-      value: '2',
+      value: stats?.activeAppointments?.toString() || '0',
       icon: <CalendarDays className="text-blue-600" size={24} />,
       href: '/healthcare/appointments',
       color: 'bg-blue-50',
     },
     {
       label: 'Pending Applications',
-      value: '1',
+      value: stats?.pendingApplications?.toString() || '0',
       icon: <FileText className="text-green-600" size={24} />,
       href: '/agriculture/my-applications',
       color: 'bg-green-50',
     },
     {
       label: 'Open Grievances',
-      value: '1',
+      value: stats?.openGrievances?.toString() || '0',
       icon: <AlertCircle className="text-orange-600" size={24} />,
       href: '/urban/grievances',
       color: 'bg-orange-50',
@@ -79,32 +96,42 @@ export default function DashboardPage() {
     },
   ];
 
-  const recentActivity = [
-    {
-      id: 1,
-      title: 'Appointment Confirmed',
-      description: 'Dr. Sharma at City Hospital - 20 Jan 2026, 10:00 AM',
-      time: '2 hours ago',
-      status: 'confirmed',
-      icon: <CheckCircle2 className="text-green-600" size={18} />,
-    },
-    {
-      id: 2,
-      title: 'Scheme Application Under Review',
-      description: 'PM Kisan Yojana - Application #12345',
-      time: '1 day ago',
-      status: 'under_review',
-      icon: <Clock className="text-yellow-600" size={18} />,
-    },
-    {
-      id: 3,
-      title: 'Grievance Acknowledged',
-      description: 'Water Supply Issue - Ticket #GRV-2024-001',
-      time: '2 days ago',
-      status: 'acknowledged',
-      icon: <AlertCircle className="text-blue-600" size={18} />,
-    },
-  ];
+  // Map activity type to icon
+  const getActivityIcon = (type: string) => {
+    switch (type) {
+      case 'appointment':
+        return <CalendarDays className="text-blue-600" size={18} />;
+      case 'application':
+        return <FileText className="text-green-600" size={18} />;
+      case 'grievance':
+        return <AlertCircle className="text-orange-600" size={18} />;
+      default:
+        return <Clock className="text-slate-600" size={18} />;
+    }
+  };
+
+  // Calculate relative time
+  const getRelativeTime = (timestamp: string) => {
+    const now = new Date().getTime();
+    const then = new Date(timestamp).getTime();
+    const diff = now - then;
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+
+    if (minutes < 60) return `${minutes} minute${minutes !== 1 ? 's' : ''} ago`;
+    if (hours < 24) return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
+    return `${days} day${days !== 1 ? 's' : ''} ago`;
+  };
+
+  const recentActivity = (recentActivityData || []).map((activity) => ({
+    id: activity.id,
+    title: activity.title,
+    description: activity.description,
+    time: getRelativeTime(activity.timestamp),
+    status: activity.status,
+    icon: getActivityIcon(activity.type),
+  }));
 
   return (
     <div className="space-y-8">

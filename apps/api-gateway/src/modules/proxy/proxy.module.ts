@@ -23,6 +23,6 @@ import { ServiceRegistryClient } from './service-registry.client';
   ],
   controllers: [ProxyController],
   providers: [ProxyService, ServiceRegistryClient],
-  exports: [ServiceRegistryClient],
+  exports: [ProxyService, ServiceRegistryClient],
 })
 export class ProxyModule {}

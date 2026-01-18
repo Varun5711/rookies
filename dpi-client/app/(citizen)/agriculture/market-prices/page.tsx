@@ -14,6 +14,7 @@ import { agricultureApi } from '@/lib/api/agriculture';
 import { MarketPrice } from '@/lib/types/agriculture';
 import { formatCurrency, formatNumber } from '@/lib/utils/formatCurrency';
 import { formatDate } from '@/lib/utils/formatDate';
+import { INDIAN_STATES } from '@/lib/constants';
 
 export default function MarketPricesPage() {
   const [page, setPage] = useState(1);
@@ -39,13 +40,8 @@ export default function MarketPricesPage() {
   }));
 
   const stateOptions = [
-    { value: 'Maharashtra', label: 'Maharashtra' },
-    { value: 'Punjab', label: 'Punjab' },
-    { value: 'Haryana', label: 'Haryana' },
-    { value: 'Uttar Pradesh', label: 'Uttar Pradesh' },
-    { value: 'Madhya Pradesh', label: 'Madhya Pradesh' },
-    { value: 'Rajasthan', label: 'Rajasthan' },
-    { value: 'Gujarat', label: 'Gujarat' },
+    { value: '', label: 'All States' },
+    ...INDIAN_STATES.map((state) => ({ value: state, label: state })),
   ];
 
   const columns = [

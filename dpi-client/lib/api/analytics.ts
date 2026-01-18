@@ -14,7 +14,7 @@ import {
  * Get dashboard overview statistics
  */
 export async function getDashboardStats(): Promise<DashboardStats> {
-  const response = await apiClient.get('/admin/analytics/overview');
+  const response = await apiClient.get('/services/analytics/admin/analytics/overview');
   return response.data.data;
 }
 
@@ -22,7 +22,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
  * Get trend data for specified number of days
  */
 export async function getTrends(days = 7): Promise<TrendData[]> {
-  const response = await apiClient.get(`/admin/analytics/trends?days=${days}`);
+  const response = await apiClient.get(`/services/analytics/admin/analytics/trends?days=${days}`);
   return response.data.data;
 }
 
@@ -30,7 +30,7 @@ export async function getTrends(days = 7): Promise<TrendData[]> {
  * Get service health status for all services
  */
 export async function getServiceHealth(): Promise<ServiceHealth[]> {
-  const response = await apiClient.get('/admin/analytics/service-health');
+  const response = await apiClient.get('/services/analytics/admin/analytics/service-health');
   return response.data.data;
 }
 

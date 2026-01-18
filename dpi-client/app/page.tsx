@@ -1,24 +1,34 @@
 "use client";
 import React from 'react';
-import { 
-  Search, 
-  PlayCircle, 
-  Globe, 
-  Menu, 
-  Shield, 
-  Users, 
-  Store, 
-  FileCheck, 
-  Share2, 
-  Mail, 
-  Rss, 
+import { useQuery } from '@tanstack/react-query';
+import {
+  Search,
+  PlayCircle,
+  Globe,
+  Menu,
+  Shield,
+  Users,
+  Store,
+  FileCheck,
+  Share2,
+  Mail,
+  Rss,
   ArrowRight,
   CheckCircle2
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { platformApi } from '@/lib/api/platform';
 
 const LandingPage: React.FC = () => {
-  const router = useRouter(); 
+  const router = useRouter();
+
+  // Fetch platform stats
+  const { data: platformStats } = useQuery({
+    queryKey: ['platformStats'],
+    queryFn: () => platformApi.getStats(),
+    staleTime: 5 * 60 * 1000, // 5 minutes cache
+    retry: 2,
+  }); 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
       
@@ -230,15 +240,21 @@ const LandingPage: React.FC = () => {
 
               <div className="flex gap-8 md:gap-16 divide-x divide-blue-500">
                 <div className="pl-4 text-center">
-                  <div className="text-3xl font-extrabold text-white">500+</div>
+                  <div className="text-3xl font-extrabold text-white">
+                    {platformStats?.totalServices || '0'}+
+                  </div>
                   <div className="text-[10px] uppercase tracking-wider text-blue-200 font-semibold mt-1">Services</div>
                 </div>
                 <div className="pl-8 md:pl-16 text-center">
-                  <div className="text-3xl font-extrabold text-white">28</div>
-                  <div className="text-[10px] uppercase tracking-wider text-blue-200 font-semibold mt-1">States</div>
+                  <div className="text-3xl font-extrabold text-white">
+                    {platformStats?.statesCovered || '28'}
+                  </div>
+                  <div className="text-[10px] uppercase tracking-wider text-blue-200 font-semibold mt-1">States & UTs</div>
                 </div>
                 <div className="pl-8 md:pl-16 text-center">
-                  <div className="text-3xl font-extrabold text-white">24/7</div>
+                  <div className="text-3xl font-extrabold text-white">
+                    {platformStats?.supportAvailability || '24/7'}
+                  </div>
                   <div className="text-[10px] uppercase tracking-wider text-blue-200 font-semibold mt-1">Support</div>
                 </div>
               </div>
