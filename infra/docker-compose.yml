@@ -38,7 +38,7 @@ services:
       - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./docker/init-scripts:/docker-entrypoint-initdb.d
+      - ./init-scripts:/docker-entrypoint-initdb.d
     networks:
       - bharatsetu-network
     healthcheck:
@@ -134,7 +134,7 @@ services:
       CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
     volumes:
       - clickhouse_data:/var/lib/clickhouse
-      - ./docker/init-scripts/clickhouse:/docker-entrypoint-initdb.d
+      - ./init-scripts/clickhouse:/docker-entrypoint-initdb.d
     networks:
       - bharatsetu-network
     healthcheck:
@@ -155,6 +155,7 @@ services:
     volumes:
       - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./monitoring/prometheus/alert_rules.yml:/etc/prometheus/alert_rules.yml:ro
+      - ./monitoring/prometheus/recording_rules.yml:/etc/prometheus/recording_rules.yml:ro
       - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
@@ -243,6 +244,60 @@ services:
     privileged: true
     networks:
       - bharatsetu-network
+
+  # ==========================================================================
+  # DATABASE EXPORTERS FOR PROMETHEUS
+  # ==========================================================================
+
+  # Redis Exporter - Redis Metrics
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.55.0
+    container_name: bharatsetu-redis-exporter
+    restart: unless-stopped
+    ports:
+      - '9121:9121'
+    environment:
+      REDIS_ADDR: redis:6379
+    networks:
+      - bharatsetu-network
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  # PostgreSQL Exporter - Postgres Metrics
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.15.0
+    container_name: bharatsetu-postgres-exporter
+    restart: unless-stopped
+    ports:
+      - '9187:9187'
+    environment:
+      DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/postgres?sslmode=disable"
+      PG_EXPORTER_EXTEND_QUERY_PATH: /etc/postgres_exporter/queries.yaml
+    volumes:
+      - ./monitoring/postgres-exporter/queries.yaml:/etc/postgres_exporter/queries.yaml:ro
+    networks:
+      - bharatsetu-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Kafka Exporter - Kafka Metrics
+  kafka-exporter:
+    image: danielqsj/kafka-exporter:v1.7.0
+    container_name: bharatsetu-kafka-exporter
+    restart: unless-stopped
+    ports:
+      - '9308:9308'
+    command:
+      - '--kafka.server=kafka:9093'
+      - '--web.listen-address=:9308'
+      - '--log.level=info'
+    networks:
+      - bharatsetu-network
+    depends_on:
+      kafka:
+        condition: service_healthy
 
   # ==========================================================================
   # APPLICATION SERVICES

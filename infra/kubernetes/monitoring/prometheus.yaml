@@ -1,94 +1,347 @@
-# Prometheus Deployment for Kubernetes
+# ============================================================================
+# Prometheus Kubernetes Deployment - Production Grade
+# ============================================================================
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prometheus
+  namespace: monitoring
+  labels:
+    app: prometheus
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: prometheus
+  labels:
+    app: prometheus
+rules:
+  - apiGroups: [""]
+    resources:
+      - nodes
+      - nodes/proxy
+      - nodes/metrics
+      - services
+      - endpoints
+      - pods
+      - configmaps
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["extensions", "networking.k8s.io"]
+    resources:
+      - ingresses
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["discovery.k8s.io"]
+    resources:
+      - endpointslices
+    verbs: ["get", "list", "watch"]
+  - nonResourceURLs: ["/metrics", "/metrics/cadvisor"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: prometheus
+  labels:
+    app: prometheus
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: prometheus
+subjects:
+  - kind: ServiceAccount
+    name: prometheus
+    namespace: monitoring
+---
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: prometheus-config
   namespace: monitoring
+  labels:
+    app: prometheus
 data:
   prometheus.yml: |
     global:
       scrape_interval: 15s
+      scrape_timeout: 10s
       evaluation_interval: 15s
-    
+      external_labels:
+        cluster: 'bharatsetu-eks'
+        env: 'production'
+        region: 'ap-south-1'
+
     alerting:
       alertmanagers:
         - static_configs:
             - targets:
                 - alertmanager:9093
-    
+          timeout: 10s
+
     rule_files:
       - /etc/prometheus/rules/*.yml
-    
+
     scrape_configs:
+      # ==================================================================
+      # PROMETHEUS SELF-MONITORING
+      # ==================================================================
       - job_name: 'prometheus'
         static_configs:
           - targets: ['localhost:9090']
-      
+
+      # ==================================================================
+      # KUBERNETES API SERVER
+      # ==================================================================
       - job_name: 'kubernetes-apiservers'
         kubernetes_sd_configs:
           - role: endpoints
         scheme: https
         tls_config:
           ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+          insecure_skip_verify: true
         bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
         relabel_configs:
           - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
             action: keep
             regex: default;kubernetes;https
-      
+
+      # ==================================================================
+      # KUBERNETES NODES (kubelet)
+      # ==================================================================
       - job_name: 'kubernetes-nodes'
         scheme: https
         tls_config:
           ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+          insecure_skip_verify: true
         bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
         kubernetes_sd_configs:
           - role: node
         relabel_configs:
           - action: labelmap
             regex: __meta_kubernetes_node_label_(.+)
-      
+          - target_label: __address__
+            replacement: kubernetes.default.svc:443
+          - source_labels: [__meta_kubernetes_node_name]
+            regex: (.+)
+            target_label: __metrics_path__
+            replacement: /api/v1/nodes/${1}/proxy/metrics
+
+      # ==================================================================
+      # KUBERNETES NODES (cAdvisor)
+      # ==================================================================
+      - job_name: 'kubernetes-cadvisor'
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+          insecure_skip_verify: true
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        kubernetes_sd_configs:
+          - role: node
+        relabel_configs:
+          - action: labelmap
+            regex: __meta_kubernetes_node_label_(.+)
+          - target_label: __address__
+            replacement: kubernetes.default.svc:443
+          - source_labels: [__meta_kubernetes_node_name]
+            regex: (.+)
+            target_label: __metrics_path__
+            replacement: /api/v1/nodes/${1}/proxy/metrics/cadvisor
+        metric_relabel_configs:
+          - source_labels: [__name__]
+            regex: 'container_(cpu|memory|network|fs)_.*'
+            action: keep
+
+      # ==================================================================
+      # KUBERNETES PODS (with prometheus.io/scrape annotation)
+      # ==================================================================
       - job_name: 'kubernetes-pods'
         kubernetes_sd_configs:
           - role: pod
             namespaces:
               names:
                 - bharatsetu
+                - monitoring
         relabel_configs:
+          # Only scrape pods with prometheus.io/scrape=true
           - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
             action: keep
             regex: true
+          # Use custom scheme if specified
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scheme]
+            action: replace
+            target_label: __scheme__
+            regex: (https?)
+          # Use custom path if specified
           - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
             action: replace
             target_label: __metrics_path__
             regex: (.+)
+          # Use custom port if specified
           - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
             action: replace
             regex: ([^:]+)(?::\d+)?;(\d+)
             replacement: $1:$2
             target_label: __address__
+          # Add pod labels
           - action: labelmap
             regex: __meta_kubernetes_pod_label_(.+)
+          # Add namespace label
           - source_labels: [__meta_kubernetes_namespace]
             action: replace
-            target_label: kubernetes_namespace
+            target_label: namespace
+          # Add pod name label
           - source_labels: [__meta_kubernetes_pod_name]
             action: replace
-            target_label: kubernetes_pod_name
-      
+            target_label: pod
+          # Add service label from app label
+          - source_labels: [__meta_kubernetes_pod_label_app]
+            action: replace
+            target_label: service
+
+      # ==================================================================
+      # KUBERNETES SERVICES (with prometheus.io/scrape annotation)
+      # ==================================================================
       - job_name: 'kubernetes-services'
         kubernetes_sd_configs:
           - role: service
             namespaces:
               names:
                 - bharatsetu
+                - monitoring
+        metrics_path: /metrics
         relabel_configs:
           - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scrape]
             action: keep
             regex: true
+          - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scheme]
+            action: replace
+            target_label: __scheme__
+            regex: (https?)
           - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_path]
             action: replace
             target_label: __metrics_path__
             regex: (.+)
+          - source_labels: [__address__, __meta_kubernetes_service_annotation_prometheus_io_port]
+            action: replace
+            target_label: __address__
+            regex: ([^:]+)(?::\d+)?;(\d+)
+            replacement: $1:$2
+          - action: labelmap
+            regex: __meta_kubernetes_service_label_(.+)
+          - source_labels: [__meta_kubernetes_namespace]
+            action: replace
+            target_label: namespace
+          - source_labels: [__meta_kubernetes_service_name]
+            action: replace
+            target_label: service
+
+      # ==================================================================
+      # BHARATSETU APPLICATION SERVICES
+      # ==================================================================
+      - job_name: 'bharatsetu-services'
+        kubernetes_sd_configs:
+          - role: endpoints
+            namespaces:
+              names:
+                - bharatsetu
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_service_label_app_kubernetes_io_part_of]
+            action: keep
+            regex: bharatsetu
+          - source_labels: [__meta_kubernetes_endpoint_port_name]
+            action: keep
+            regex: http
+          - source_labels: [__meta_kubernetes_service_name]
+            action: replace
+            target_label: service
+          - source_labels: [__meta_kubernetes_namespace]
+            action: replace
+            target_label: namespace
+          - source_labels: [__meta_kubernetes_pod_name]
+            action: replace
+            target_label: pod
+
+  recording_rules.yml: |
+    groups:
+      - name: http_request_rules
+        interval: 30s
+        rules:
+          - record: service:http_requests:rate5m
+            expr: sum(rate(http_requests_total[5m])) by (service, namespace)
+          - record: service:http_errors:rate5m
+            expr: sum(rate(http_requests_total{status=~"5.."}[5m])) by (service, namespace)
+          - record: service:http_error_ratio:rate5m
+            expr: |
+              sum(rate(http_requests_total{status=~"5.."}[5m])) by (service, namespace)
+              /
+              sum(rate(http_requests_total[5m])) by (service, namespace)
+          - record: service:http_request_duration_seconds:p95
+            expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, service, namespace))
+          - record: service:http_request_duration_seconds:p99
+            expr: histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, service, namespace))
+      
+      - name: sli_slo_rules
+        interval: 30s
+        rules:
+          - record: sli:availability:ratio5m
+            expr: |
+              sum(rate(http_requests_total{status!~"5.."}[5m])) by (service, namespace)
+              /
+              sum(rate(http_requests_total[5m])) by (service, namespace)
+          - record: sli:latency:ratio5m
+            expr: |
+              sum(rate(http_request_duration_seconds_bucket{le="0.5"}[5m])) by (service, namespace)
+              /
+              sum(rate(http_request_duration_seconds_count[5m])) by (service, namespace)
+          - record: slo:error_budget:burn_rate_1h
+            expr: |
+              (1 - sli:availability:ratio5m)
+              /
+              (1 - 0.999)
+
+  alert_rules.yml: |
+    groups:
+      - name: service_availability
+        rules:
+          - alert: ServiceDown
+            expr: up{job="bharatsetu-services"} == 0
+            for: 1m
+            labels:
+              severity: critical
+              team: platform
+            annotations:
+              summary: "Service {{ $labels.service }} is down"
+              description: "Service {{ $labels.service }} in namespace {{ $labels.namespace }} has been down for more than 1 minute."
+          
+          - alert: HighErrorRate
+            expr: service:http_error_ratio:rate5m > 0.01
+            for: 5m
+            labels:
+              severity: warning
+              team: platform
+            annotations:
+              summary: "High error rate on {{ $labels.service }}"
+              description: "Error rate is {{ $value | humanizePercentage }}"
+          
+          - alert: HighP95Latency
+            expr: service:http_request_duration_seconds:p95 > 2
+            for: 5m
+            labels:
+              severity: warning
+              team: platform
+            annotations:
+              summary: "High P95 latency on {{ $labels.service }}"
+              description: "P95 latency is {{ $value | humanizeDuration }}"
+          
+          - alert: SLOAvailabilityBreach
+            expr: sli:availability:ratio5m < 0.999
+            for: 5m
+            labels:
+              severity: warning
+              team: platform
+              slo: availability
+            annotations:
+              summary: "SLO breach: Availability on {{ $labels.service }}"
+              description: "Availability is {{ $value | humanizePercentage }} (SLO: 99.9%)"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -108,97 +361,157 @@ spec:
         app: prometheus
     spec:
       serviceAccountName: prometheus
+      securityContext:
+        fsGroup: 65534
+        runAsNonRoot: true
+        runAsUser: 65534
       containers:
         - name: prometheus
           image: prom/prometheus:v2.48.0
-          ports:
-            - containerPort: 9090
           args:
             - '--config.file=/etc/prometheus/prometheus.yml'
             - '--storage.tsdb.path=/prometheus'
-            - '--storage.tsdb.retention.time=30d'
+            - '--storage.tsdb.retention.time=15d'
+            - '--storage.tsdb.retention.size=10GB'
             - '--web.enable-lifecycle'
+            - '--web.enable-admin-api'
+            - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+            - '--web.console.templates=/usr/share/prometheus/consoles'
+          ports:
+            - containerPort: 9090
+              name: http
+          livenessProbe:
+            httpGet:
+              path: /-/healthy
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /-/ready
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 2Gi
           volumeMounts:
             - name: config
               mountPath: /etc/prometheus
+            - name: rules
+              mountPath: /etc/prometheus/rules
             - name: storage
               mountPath: /prometheus
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+        - name: configmap-reload
+          image: jimmidyson/configmap-reload:v0.9.0
+          args:
+            - '--volume-dir=/etc/prometheus'
+            - '--webhook-url=http://127.0.0.1:9090/-/reload'
           resources:
             requests:
-              cpu: "200m"
-              memory: "512Mi"
+              cpu: 10m
+              memory: 32Mi
             limits:
-              cpu: "1000m"
-              memory: "2Gi"
+              cpu: 50m
+              memory: 64Mi
+          volumeMounts:
+            - name: config
+              mountPath: /etc/prometheus
+              readOnly: true
+            - name: rules
+              mountPath: /etc/prometheus/rules
+              readOnly: true
       volumes:
         - name: config
           configMap:
             name: prometheus-config
+            items:
+              - key: prometheus.yml
+                path: prometheus.yml
+        - name: rules
+          configMap:
+            name: prometheus-config
+            items:
+              - key: recording_rules.yml
+                path: recording_rules.yml
+              - key: alert_rules.yml
+                path: alert_rules.yml
         - name: storage
           persistentVolumeClaim:
-            claimName: prometheus-pvc
+            claimName: prometheus-storage
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: prometheus-storage
+  namespace: monitoring
+  labels:
+    app: prometheus
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: gp3
+  resources:
+    requests:
+      storage: 50Gi
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: prometheus
   namespace: monitoring
+  labels:
+    app: prometheus
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9090"
 spec:
   type: ClusterIP
-  ports:
-    - port: 9090
-      targetPort: 9090
   selector:
     app: prometheus
+  ports:
+    - name: http
+      port: 9090
+      targetPort: http
 ---
-apiVersion: v1
-kind: PersistentVolumeClaim
+apiVersion: networking.k8s.io/v1
+kind: Ingress
 metadata:
-  name: prometheus-pvc
+  name: prometheus
   namespace: monitoring
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/auth-type: basic
+    nginx.ingress.kubernetes.io/auth-secret: prometheus-basic-auth
+    nginx.ingress.kubernetes.io/auth-realm: "Authentication Required"
 spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 50Gi
-  storageClassName: gp3
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: prometheus
-  namespace: monitoring
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: prometheus
-rules:
-  - apiGroups: [""]
-    resources:
-      - nodes
-      - nodes/proxy
-      - services
-      - endpoints
-      - pods
-    verbs: ["get", "list", "watch"]
-  - apiGroups: [""]
-    resources:
-      - configmaps
-    verbs: ["get"]
-  - nonResourceURLs: ["/metrics"]
-    verbs: ["get"]
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: prometheus
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: prometheus
-subjects:
-  - kind: ServiceAccount
-    name: prometheus
-    namespace: monitoring
+  tls:
+    - hosts:
+        - prometheus.bharatsetu.gov.in
+      secretName: prometheus-tls
+  rules:
+    - host: prometheus.bharatsetu.gov.in
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: prometheus
+                port:
+                  number: 9090

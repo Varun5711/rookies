@@ -9,6 +9,7 @@ import { AppService } from './app.service';
 import { ProxyModule } from '../modules/proxy/proxy.module';
 import { AuthProxyModule } from '../modules/auth-proxy/auth-proxy.module';
 import { RegistryProxyModule } from '../modules/registry-proxy/registry-proxy.module';
+import { ApiDocsModule } from '../modules/api-docs/api-docs.module';
 import { CorrelationIdMiddleware } from '../middleware/correlation-id.middleware';
 import { RateLimitMiddleware } from '../middleware/rate-limit.middleware';
 import { JwtStrategy } from '../strategies/jwt.strategy';
@@ -52,6 +53,9 @@ import { JwtStrategy } from '../strategies/jwt.strategy';
 
     // Dynamic proxy module - forwards /api/services/* to registered services
     ProxyModule,
+
+    // API Documentation module - Swagger documentation controllers
+    ApiDocsModule,
   ],
   controllers: [AppController],
   providers: [

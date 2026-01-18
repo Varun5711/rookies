@@ -10,17 +10,36 @@
     "importHelpers": true,
     "target": "es2015",
     "module": "esnext",
-    "lib": ["es2020", "dom"],
+    "lib": [
+      "es2020",
+      "dom"
+    ],
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@dpi/kafka": ["libs/kafka/src/index.ts"],
-      "@dpi/redis": ["libs/redis/src/index.ts"],
-      "@dpi/database": ["libs/database/src/index.ts"],
-      "@dpi/common": ["libs/common/src/index.ts"],
-      "@dpi/clickhouse": ["libs/clickhouse/src/index.ts"]
+      "@dpi/kafka": [
+        "libs/kafka/src/index.ts"
+      ],
+      "@dpi/redis": [
+        "libs/redis/src/index.ts"
+      ],
+      "@dpi/database": [
+        "libs/database/src/index.ts"
+      ],
+      "@dpi/common": [
+        "libs/common/src/index.ts"
+      ],
+      "@dpi/clickhouse": [
+        "libs/clickhouse/src/index.ts"
+      ],
+      "@dpi/metrics": [
+        "libs/metrics/src/index.ts"
+      ]
     }
   },
-  "exclude": ["node_modules", "tmp"]
+  "exclude": [
+    "node_modules",
+    "tmp"
+  ]
 }

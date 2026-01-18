@@ -1,10 +1,14 @@
 # Prometheus Configuration for BharatSetu DPI Platform
+# Production-Grade Metrics Scraping Configuration
+
 global:
   scrape_interval: 15s
+  scrape_timeout: 10s
   evaluation_interval: 15s
   external_labels:
     cluster: 'bharatsetu-cluster'
-    env: 'production'
+    env: '${ENVIRONMENT:-production}'
+    region: 'ap-south-1'
 
 # Alerting configuration
 alerting:
@@ -12,20 +16,27 @@ alerting:
     - static_configs:
         - targets:
             - alertmanager:9093
+      timeout: 10s
 
 # Rule files
 rule_files:
   - /etc/prometheus/alert_rules.yml
+  - /etc/prometheus/recording_rules.yml
 
 # Scrape configurations
 scrape_configs:
-  # Prometheus self-monitoring
+  # ============================================================================
+  # PROMETHEUS SELF-MONITORING
+  # ============================================================================
   - job_name: 'prometheus'
     static_configs:
       - targets: ['localhost:9090']
     metrics_path: /metrics
+    scrape_interval: 10s
 
-  # Node Exporter - Host metrics
+  # ============================================================================
+  # NODE EXPORTER - HOST METRICS
+  # ============================================================================
   - job_name: 'node-exporter'
     static_configs:
       - targets: ['node-exporter:9100']
@@ -34,94 +45,187 @@ scrape_configs:
         target_label: instance
         regex: '([^:]+):\d+'
         replacement: '${1}'
+    metric_relabel_configs:
+      # Drop high-cardinality metrics
+      - source_labels: [__name__]
+        regex: 'node_scrape_collector_duration_seconds'
+        action: drop
 
-  # cAdvisor - Container metrics
+  # ============================================================================
+  # cADVISOR - CONTAINER METRICS
+  # ============================================================================
   - job_name: 'cadvisor'
     static_configs:
       - targets: ['cadvisor:8080']
-    relabel_configs:
-      - source_labels: [__address__]
-        target_label: instance
-        regex: '([^:]+):\d+'
-        replacement: '${1}'
+    scrape_interval: 30s
+    metric_relabel_configs:
+      # Keep only relevant container metrics
+      - source_labels: [__name__]
+        regex: 'container_(cpu|memory|network|fs)_.*'
+        action: keep
+      # Drop pause containers
+      - source_labels: [container]
+        regex: 'POD|pause'
+        action: drop
 
-  # API Gateway
+  # ============================================================================
+  # REDIS EXPORTER
+  # ============================================================================
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+    scrape_interval: 15s
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'redis_(up|connected_clients|blocked_clients|memory_.*|commands_.*|keyspace_.*|expired_keys|evicted_keys|hits|misses)'
+        action: keep
+
+  # ============================================================================
+  # POSTGRESQL EXPORTER
+  # ============================================================================
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+    scrape_interval: 30s
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'pg_(up|database_size_bytes|stat_activity_.*|stat_user_tables_.*|stat_bgwriter_.*|locks_count|replication_.*)'
+        action: keep
+
+  # ============================================================================
+  # KAFKA EXPORTER
+  # ============================================================================
+  - job_name: 'kafka'
+    static_configs:
+      - targets: ['kafka-exporter:9308']
+    scrape_interval: 30s
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'kafka_(brokers|topic_partitions|topic_partition_.*|consumergroup_.*)'
+        action: keep
+
+  # ============================================================================
+  # CLICKHOUSE METRICS
+  # ============================================================================
+  - job_name: 'clickhouse'
+    static_configs:
+      - targets: ['clickhouse:8123']
+    metrics_path: /metrics
+    scrape_interval: 30s
+
+  # ============================================================================
+  # APPLICATION SERVICES - API GATEWAY
+  # ============================================================================
   - job_name: 'api-gateway'
     static_configs:
       - targets: ['api-gateway:3000']
     metrics_path: /metrics
     scrape_interval: 10s
+    scrape_timeout: 5s
+    honor_labels: true
 
-  # Auth Service
+  # ============================================================================
+  # APPLICATION SERVICES - AUTH SERVICE
+  # ============================================================================
   - job_name: 'auth-svc'
     static_configs:
       - targets: ['auth-svc:3001']
     metrics_path: /metrics
     scrape_interval: 10s
+    scrape_timeout: 5s
+    honor_labels: true
 
-  # Healthcare Service
+  # ============================================================================
+  # APPLICATION SERVICES - HEALTHCARE SERVICE
+  # ============================================================================
   - job_name: 'healthcare-svc'
     static_configs:
       - targets: ['healthcare-svc:3002']
     metrics_path: /metrics
     scrape_interval: 10s
+    scrape_timeout: 5s
+    honor_labels: true
 
-  # Agriculture Service
+  # ============================================================================
+  # APPLICATION SERVICES - AGRICULTURE SERVICE
+  # ============================================================================
   - job_name: 'agriculture-svc'
     static_configs:
       - targets: ['agriculture-svc:3003']
     metrics_path: /metrics
     scrape_interval: 10s
+    scrape_timeout: 5s
+    honor_labels: true
 
-  # Urban Service
+  # ============================================================================
+  # APPLICATION SERVICES - URBAN SERVICE
+  # ============================================================================
   - job_name: 'urban-svc'
     static_configs:
       - targets: ['urban-svc:3004']
     metrics_path: /metrics
     scrape_interval: 10s
+    scrape_timeout: 5s
+    honor_labels: true
 
-  # Notification Service
+  # ============================================================================
+  # APPLICATION SERVICES - NOTIFICATION SERVICE
+  # ============================================================================
   - job_name: 'notification-svc'
     static_configs:
       - targets: ['notification-svc:3005']
     metrics_path: /metrics
     scrape_interval: 10s
+    scrape_timeout: 5s
+    honor_labels: true
 
-  # Audit Service
+  # ============================================================================
+  # APPLICATION SERVICES - AUDIT SERVICE
+  # ============================================================================
   - job_name: 'audit-svc'
     static_configs:
       - targets: ['audit-svc:3006']
     metrics_path: /metrics
     scrape_interval: 10s
+    scrape_timeout: 5s
+    honor_labels: true
 
-  # Analytics Service
+  # ============================================================================
+  # APPLICATION SERVICES - ANALYTICS SERVICE
+  # ============================================================================
   - job_name: 'analytics-svc'
     static_configs:
       - targets: ['analytics-svc:3007']
     metrics_path: /metrics
     scrape_interval: 10s
+    scrape_timeout: 5s
+    honor_labels: true
 
-  # Service Registry
+  # ============================================================================
+  # APPLICATION SERVICES - SERVICE REGISTRY
+  # ============================================================================
   - job_name: 'service-registry'
     static_configs:
       - targets: ['service-registry:3010']
     metrics_path: /metrics
     scrape_interval: 10s
+    scrape_timeout: 5s
+    honor_labels: true
 
-  # Redis Exporter (if using redis-exporter)
-  - job_name: 'redis'
+  # ============================================================================
+  # GRAFANA
+  # ============================================================================
+  - job_name: 'grafana'
     static_configs:
-      - targets: ['redis:6379']
+      - targets: ['grafana:3000']
     metrics_path: /metrics
+    scrape_interval: 30s
 
-  # PostgreSQL (if using postgres-exporter)
-  - job_name: 'postgres'
+  # ============================================================================
+  # ALERTMANAGER
+  # ============================================================================
+  - job_name: 'alertmanager'
     static_configs:
-      - targets: ['postgres:5432']
+      - targets: ['alertmanager:9093']
     metrics_path: /metrics
-
-  # Kafka metrics (JMX Exporter if configured)
-  - job_name: 'kafka'
-    static_configs:
-      - targets: ['kafka:9092']
-    metrics_path: /metrics
+    scrape_interval: 30s

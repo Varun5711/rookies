@@ -1,50 +1,11 @@
 # Alert Rules for BharatSetu DPI Platform
+# Production-Grade Alerting Configuration
+
 groups:
-  # Infrastructure Alerts
-  - name: infrastructure
-    rules:
-      # High CPU Usage
-      - alert: HighCPUUsage
-        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
-        for: 5m
-        labels:
-          severity: warning
-        annotations:
-          summary: "High CPU usage detected"
-          description: "CPU usage is above 80% on {{ $labels.instance }} for more than 5 minutes."
-
-      # High Memory Usage
-      - alert: HighMemoryUsage
-        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 80
-        for: 5m
-        labels:
-          severity: warning
-        annotations:
-          summary: "High memory usage detected"
-          description: "Memory usage is above 80% on {{ $labels.instance }} for more than 5 minutes."
-
-      # Disk Space Low
-      - alert: DiskSpaceLow
-        expr: (1 - (node_filesystem_avail_bytes{fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes{fstype!~"tmpfs|overlay"})) * 100 > 85
-        for: 5m
-        labels:
-          severity: critical
-        annotations:
-          summary: "Low disk space"
-          description: "Disk usage is above 85% on {{ $labels.instance }}:{{ $labels.mountpoint }}"
-
-      # Container Down
-      - alert: ContainerDown
-        expr: absent(container_last_seen{name=~"bharatsetu-.*"}) == 1
-        for: 1m
-        labels:
-          severity: critical
-        annotations:
-          summary: "Container is down"
-          description: "Container {{ $labels.name }} is not running."
-
-  # Application Service Alerts
-  - name: application
+  # ============================================================================
+  # SERVICE AVAILABILITY ALERTS
+  # ============================================================================
+  - name: service_availability
     rules:
       # Service Down
       - alert: ServiceDown
@@ -52,41 +13,171 @@ groups:
         for: 1m
         labels:
           severity: critical
+          team: platform
         annotations:
-          summary: "Service is down"
-          description: "{{ $labels.job }} service is not responding."
+          summary: "Service {{ $labels.job }} is down"
+          description: "Service {{ $labels.job }} has been unreachable for more than 1 minute."
+          runbook_url: "https://runbooks.bharatsetu.gov.in/service-down"
+          dashboard_url: "https://grafana.bharatsetu.gov.in/d/bharatsetu-overview"
 
-      # High Request Latency
-      - alert: HighRequestLatency
-        expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, job)) > 2
+      # Multiple Services Down
+      - alert: MultipleServicesDown
+        expr: count(up{job=~"api-gateway|auth-svc|healthcare-svc|agriculture-svc|urban-svc|notification-svc|audit-svc|analytics-svc|service-registry"} == 0) > 2
+        for: 1m
+        labels:
+          severity: critical
+          team: platform
+          pagerduty: "true"
+        annotations:
+          summary: "Multiple services are down"
+          description: "{{ $value }} services are currently unreachable."
+
+      # Service Restart Loop
+      - alert: ServiceRestartLoop
+        expr: increase(process_start_time_seconds[1h]) > 3
         for: 5m
         labels:
           severity: warning
+          team: platform
         annotations:
-          summary: "High request latency"
-          description: "95th percentile latency is above 2 seconds for {{ $labels.job }}."
+          summary: "Service {{ $labels.service }} is restarting frequently"
+          description: "Service {{ $labels.service }} has restarted {{ $value }} times in the last hour."
 
-      # High Error Rate
-      - alert: HighErrorRate
-        expr: sum(rate(http_requests_total{status=~"5.."}[5m])) by (job) / sum(rate(http_requests_total[5m])) by (job) > 0.05
+  # ============================================================================
+  # LATENCY ALERTS
+  # ============================================================================
+  - name: latency
+    rules:
+      # High P95 Latency
+      - alert: HighP95Latency
+        expr: service:http_request_duration_seconds:p95 > 2
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "High P95 latency on {{ $labels.service }}"
+          description: "P95 latency is {{ $value | humanizeDuration }} (threshold: 2s)"
+
+      # Critical P99 Latency
+      - alert: CriticalP99Latency
+        expr: service:http_request_duration_seconds:p99 > 5
         for: 5m
         labels:
           severity: critical
+          team: platform
         annotations:
-          summary: "High error rate"
-          description: "Error rate is above 5% for {{ $labels.job }}."
+          summary: "Critical P99 latency on {{ $labels.service }}"
+          description: "P99 latency is {{ $value | humanizeDuration }} (threshold: 5s)"
 
-      # Too Many Requests
-      - alert: TooManyRequests
-        expr: sum(rate(http_requests_total[1m])) by (job) > 1000
+      # Latency Spike
+      - alert: LatencySpike
+        expr: |
+          (service:http_request_duration_seconds:p95 - service:http_request_duration_seconds:p95 offset 10m)
+          /
+          service:http_request_duration_seconds:p95 offset 10m
+          > 0.5
         for: 5m
         labels:
           severity: warning
+          team: platform
         annotations:
-          summary: "High request rate"
-          description: "Request rate is above 1000 req/min for {{ $labels.job }}."
+          summary: "Latency spike detected on {{ $labels.service }}"
+          description: "P95 latency increased by {{ $value | humanizePercentage }} compared to 10 minutes ago"
 
-  # Database Alerts
+  # ============================================================================
+  # ERROR RATE ALERTS
+  # ============================================================================
+  - name: error_rate
+    rules:
+      # High Error Rate (5xx)
+      - alert: HighErrorRate
+        expr: service:http_error_ratio:rate5m > 0.01
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "High error rate on {{ $labels.service }}"
+          description: "Error rate is {{ $value | humanizePercentage }} (threshold: 1%)"
+
+      # Critical Error Rate (5xx)
+      - alert: CriticalErrorRate
+        expr: service:http_error_ratio:rate5m > 0.05
+        for: 2m
+        labels:
+          severity: critical
+          team: platform
+          pagerduty: "true"
+        annotations:
+          summary: "Critical error rate on {{ $labels.service }}"
+          description: "Error rate is {{ $value | humanizePercentage }} (threshold: 5%)"
+
+      # Error Rate Spike
+      - alert: ErrorRateSpike
+        expr: |
+          service:http_errors:rate5m > 10
+          and
+          service:http_errors:rate5m > (service:http_errors:rate5m offset 10m * 3)
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "Error rate spike on {{ $labels.service }}"
+          description: "Error rate spiked to {{ $value | humanize }} errors/sec"
+
+      # High 4xx Error Rate
+      - alert: HighClientErrorRate
+        expr: |
+          sum(rate(http_requests_total{status=~"4.."}[5m])) by (service)
+          /
+          sum(rate(http_requests_total[5m])) by (service)
+          > 0.1
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "High client error rate on {{ $labels.service }}"
+          description: "4xx error rate is {{ $value | humanizePercentage }}"
+
+  # ============================================================================
+  # THROUGHPUT ALERTS
+  # ============================================================================
+  - name: throughput
+    rules:
+      # Low Traffic (potential issue)
+      - alert: LowTraffic
+        expr: |
+          service:http_requests:rate5m < 1
+          and
+          hour() >= 6 and hour() <= 22
+        for: 15m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "Unusually low traffic on {{ $labels.service }}"
+          description: "Request rate is {{ $value | humanize }} req/s during business hours"
+
+      # Traffic Spike
+      - alert: TrafficSpike
+        expr: |
+          service:http_requests:rate5m > (service:http_requests:rate5m offset 1h * 3)
+          and
+          service:http_requests:rate5m > 100
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "Traffic spike on {{ $labels.service }}"
+          description: "Traffic increased 3x compared to 1 hour ago ({{ $value | humanize }} req/s)"
+
+  # ============================================================================
+  # DATABASE ALERTS
+  # ============================================================================
   - name: database
     rules:
       # PostgreSQL Down
@@ -95,59 +186,248 @@ groups:
         for: 1m
         labels:
           severity: critical
+          team: dba
+          pagerduty: "true"
         annotations:
           summary: "PostgreSQL is down"
-          description: "PostgreSQL database is not responding."
+          description: "PostgreSQL database is unreachable"
 
-      # PostgreSQL High Connections
+      # High Connection Usage
       - alert: PostgreSQLHighConnections
-        expr: sum(pg_stat_activity_count) > 150
+        expr: pg:connections:utilization > 0.8
         for: 5m
         labels:
           severity: warning
+          team: dba
         annotations:
-          summary: "High number of PostgreSQL connections"
-          description: "PostgreSQL has more than 150 active connections."
+          summary: "PostgreSQL connection pool nearing limit"
+          description: "Connection utilization is {{ $value | humanizePercentage }}"
 
+      # Slow Queries
+      - alert: PostgreSQLSlowQueries
+        expr: service:db_query_duration_seconds:p95 > 1
+        for: 5m
+        labels:
+          severity: warning
+          team: dba
+        annotations:
+          summary: "Slow database queries on {{ $labels.service }}"
+          description: "P95 query duration is {{ $value | humanizeDuration }}"
+
+      # High Query Error Rate
+      - alert: DatabaseQueryErrors
+        expr: |
+          service:db_query_errors:rate5m
+          /
+          service:db_queries:rate5m
+          > 0.01
+        for: 5m
+        labels:
+          severity: warning
+          team: dba
+        annotations:
+          summary: "High database error rate on {{ $labels.service }}"
+          description: "Query error rate is {{ $value | humanizePercentage }}"
+
+  # ============================================================================
+  # REDIS/CACHE ALERTS
+  # ============================================================================
+  - name: cache
+    rules:
       # Redis Down
       - alert: RedisDown
         expr: redis_up == 0
         for: 1m
         labels:
           severity: critical
+          team: platform
+          pagerduty: "true"
         annotations:
           summary: "Redis is down"
-          description: "Redis cache is not responding."
+          description: "Redis cache is unreachable"
 
-      # Redis High Memory
+      # High Redis Memory
       - alert: RedisHighMemory
-        expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.8
+        expr: redis:memory:utilization > 0.8
         for: 5m
         labels:
           severity: warning
+          team: platform
         annotations:
-          summary: "Redis high memory usage"
-          description: "Redis memory usage is above 80%."
+          summary: "Redis memory usage high"
+          description: "Redis memory is at {{ $value | humanizePercentage }}"
 
-  # Kafka Alerts
+      # Low Cache Hit Rate
+      - alert: LowCacheHitRate
+        expr: service:cache_hit_ratio:rate5m < 0.8
+        for: 15m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "Low cache hit rate on {{ $labels.service }}"
+          description: "Cache hit rate is {{ $value | humanizePercentage }}"
+
+  # ============================================================================
+  # KAFKA ALERTS
+  # ============================================================================
   - name: kafka
     rules:
-      # Kafka Broker Down
-      - alert: KafkaBrokerDown
-        expr: kafka_server_replicamanager_leadercount == 0
-        for: 1m
-        labels:
-          severity: critical
-        annotations:
-          summary: "Kafka broker is down"
-          description: "Kafka broker has no leader partitions."
-
-      # Kafka Consumer Lag
-      - alert: KafkaConsumerLag
-        expr: kafka_consumer_group_lag > 1000
+      # Kafka Consumer Lag High
+      - alert: KafkaConsumerLagHigh
+        expr: kafka:consumer_lag:total > 10000
         for: 10m
         labels:
           severity: warning
+          team: platform
         annotations:
-          summary: "Kafka consumer lag is high"
-          description: "Consumer group {{ $labels.consumergroup }} has lag of {{ $value }} on topic {{ $labels.topic }}."
+          summary: "High Kafka consumer lag"
+          description: "Consumer group {{ $labels.consumer_group }} has lag of {{ $value }} on topic {{ $labels.topic }}"
+
+      # Kafka Consumer Lag Critical
+      - alert: KafkaConsumerLagCritical
+        expr: kafka:consumer_lag:total > 100000
+        for: 5m
+        labels:
+          severity: critical
+          team: platform
+          pagerduty: "true"
+        annotations:
+          summary: "Critical Kafka consumer lag"
+          description: "Consumer group {{ $labels.consumer_group }} has lag of {{ $value }}"
+
+      # Kafka Producer Failures
+      - alert: KafkaProducerFailures
+        expr: increase(kafka_producer_record_error_total[5m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "Kafka producer errors on {{ $labels.service }}"
+          description: "{{ $value }} producer errors in last 5 minutes"
+
+  # ============================================================================
+  # RESOURCE ALERTS
+  # ============================================================================
+  - name: resources
+    rules:
+      # High CPU Usage
+      - alert: HighCPUUsage
+        expr: node:cpu_usage:rate5m > 0.8
+        for: 10m
+        labels:
+          severity: warning
+          team: infrastructure
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage is {{ $value | humanizePercentage }}"
+
+      # Critical CPU Usage
+      - alert: CriticalCPUUsage
+        expr: node:cpu_usage:rate5m > 0.95
+        for: 5m
+        labels:
+          severity: critical
+          team: infrastructure
+        annotations:
+          summary: "Critical CPU usage"
+          description: "CPU usage is {{ $value | humanizePercentage }}"
+
+      # High Memory Usage
+      - alert: HighMemoryUsage
+        expr: node:memory_usage:percent > 80
+        for: 10m
+        labels:
+          severity: warning
+          team: infrastructure
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is {{ $value | printf \"%.1f\" }}%"
+
+      # Low Disk Space
+      - alert: LowDiskSpace
+        expr: node:disk_usage:percent > 80
+        for: 10m
+        labels:
+          severity: warning
+          team: infrastructure
+        annotations:
+          summary: "Low disk space"
+          description: "Disk usage is {{ $value | printf \"%.1f\" }}% on {{ $labels.mountpoint }}"
+
+      # Critical Disk Space
+      - alert: CriticalDiskSpace
+        expr: node:disk_usage:percent > 90
+        for: 5m
+        labels:
+          severity: critical
+          team: infrastructure
+          pagerduty: "true"
+        annotations:
+          summary: "Critical disk space"
+          description: "Disk usage is {{ $value | printf \"%.1f\" }}%"
+
+      # Container Memory High
+      - alert: ContainerMemoryHigh
+        expr: container:memory_usage:percent > 80
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "High memory usage in {{ $labels.container }}"
+          description: "Container memory is at {{ $value | printf \"%.1f\" }}%"
+
+  # ============================================================================
+  # SLO ALERTS
+  # ============================================================================
+  - name: slo
+    rules:
+      # SLO Breach - Availability
+      - alert: SLOAvailabilityBreach
+        expr: sli:availability:ratio5m < 0.999
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+          slo: availability
+        annotations:
+          summary: "SLO breach: Availability on {{ $labels.service }}"
+          description: "Availability is {{ $value | humanizePercentage }} (SLO: 99.9%)"
+
+      # SLO Breach - Latency
+      - alert: SLOLatencyBreach
+        expr: sli:latency:ratio5m < 0.95
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+          slo: latency
+        annotations:
+          summary: "SLO breach: Latency on {{ $labels.service }}"
+          description: "Only {{ $value | humanizePercentage }} of requests under 500ms (SLO: 95%)"
+
+      # Error Budget Burn Rate High
+      - alert: ErrorBudgetBurnRateHigh
+        expr: slo:error_budget:burn_rate_1h > 2
+        for: 1h
+        labels:
+          severity: warning
+          team: platform
+          slo: error_budget
+        annotations:
+          summary: "High error budget burn rate on {{ $labels.service }}"
+          description: "Burn rate is {{ $value | printf \"%.2f\" }}x (threshold: 2x)"
+
+      # Error Budget Nearly Exhausted
+      - alert: ErrorBudgetNearlyExhausted
+        expr: slo:error_budget:remaining_30d < 0.2
+        for: 1h
+        labels:
+          severity: critical
+          team: platform
+          slo: error_budget
+        annotations:
+          summary: "Error budget nearly exhausted on {{ $labels.service }}"
+          description: "Only {{ $value | humanizePercentage }} of error budget remaining"
