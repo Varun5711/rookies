@@ -7,16 +7,18 @@ import {
   Put,
   Query,
   ParseUUIDPipe,
+  UseGuards,
 } from '@nestjs/common';
 import { AppointmentsService } from './appointments.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { QueryAppointmentDto } from './dto/query-appointment.dto';
 import { CancelAppointmentDto } from './dto/cancel-appointment.dto';
-import { GetCurrentUser, CurrentUser } from '@dpi/common';
+import { GetCurrentUser, CurrentUser, PreventAdminAsUserGuard } from '@dpi/common';
 
+@UseGuards(PreventAdminAsUserGuard)
 @Controller('appointments')
 export class AppointmentsController {
-  constructor(private readonly appointmentsService: AppointmentsService) {}
+  constructor(private readonly appointmentsService: AppointmentsService) { }
 
   @Post()
   create(

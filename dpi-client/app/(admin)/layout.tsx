@@ -19,7 +19,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
 
     // Check if user is admin
-    if (user && !user.roles.includes('admin')) {
+    if (user && !user.roles.includes('platform_admin')) {
       router.push('/dashboard');
       return;
     }

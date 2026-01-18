@@ -28,7 +28,7 @@ export interface QueryAuditLogDto {
 export class AuditService {
   private readonly logger = new Logger(AuditService.name);
 
-  constructor(private readonly auditRepository: AuditRepository) {}
+  constructor(private readonly auditRepository: AuditRepository) { }
 
   async create(dto: CreateAuditLogDto): Promise<void> {
     return this.auditRepository.create({
@@ -53,23 +53,30 @@ export class AuditService {
     } = query;
 
     const offset = (page - 1) * limit;
-    const logs = await this.auditRepository.findAll({
+    const params = {
       event_type,
       user_id: userId,
       service_name: serviceName,
       from_date: fromDate,
       to_date: toDate,
-      limit,
-      offset,
-    });
+    };
+
+    const [logs, total] = await Promise.all([
+      this.auditRepository.findAll({
+        ...params,
+        limit,
+        offset,
+      }),
+      this.auditRepository.count(params),
+    ]);
 
     return {
       data: logs,
       meta: {
-        page,
-        limit,
-        total: logs.length,
-        totalPages: Math.ceil(logs.length / limit),
+        page: Number(page),
+        limit: Number(limit),
+        total,
+        totalPages: Math.ceil(total / limit),
       },
     };
   }

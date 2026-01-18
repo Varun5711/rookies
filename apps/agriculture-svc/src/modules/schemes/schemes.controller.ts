@@ -6,16 +6,18 @@ import {
   Param,
   Query,
   ParseUUIDPipe,
+  UseGuards,
 } from '@nestjs/common';
 import { SchemesService } from './schemes.service';
 import { QuerySchemeDto } from './dto/query-scheme.dto';
 import { ApplySchemeDto } from './dto/apply-scheme.dto';
 import { QueryApplicationDto } from './dto/query-application.dto';
-import { GetCurrentUser, CurrentUser, Public } from '@dpi/common';
+import { GetCurrentUser, CurrentUser, Public, PreventAdminAsUserGuard } from '@dpi/common';
 
+@UseGuards(PreventAdminAsUserGuard)
 @Controller('schemes')
 export class SchemesController {
-  constructor(private readonly schemesService: SchemesService) {}
+  constructor(private readonly schemesService: SchemesService) { }
 
   @Get()
   @Public()

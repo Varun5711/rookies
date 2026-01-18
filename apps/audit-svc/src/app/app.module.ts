@@ -7,6 +7,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard, RolesGuard } from '@dpi/common';
 import { AuthModule } from '../modules/auth/auth.module';
 import { AuditModule } from '../modules/audit/audit.module';
+import { AnalyticsModule } from '../modules/analytics/analytics.module';
 import { AuditConsumer } from '../modules/consumers/audit.consumer';
 import { HealthModule } from '../modules/health/health.module';
 
@@ -45,6 +46,7 @@ import { HealthModule } from '../modules/health/health.module';
     }),
     AuthModule,
     AuditModule,
+    AnalyticsModule,
     HealthModule,
   ],
   controllers: [AuditConsumer],
@@ -59,4 +61,4 @@ import { HealthModule } from '../modules/health/health.module';
     },
   ],
 })
-export class AppModule {}
+export class AppModule { }

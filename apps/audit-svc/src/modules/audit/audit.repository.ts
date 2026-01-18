@@ -10,7 +10,7 @@ export class AuditRepository {
   constructor(
     @Inject(CLICKHOUSE_CLIENT)
     private readonly clickhouse: ClickHouseClient,
-  ) {}
+  ) { }
 
   async create(dto: CreateAuditLogDto): Promise<void> {
     try {
@@ -33,6 +33,55 @@ export class AuditRepository {
     }
   }
 
+  async count(params: {
+    service_name?: string;
+    user_id?: string;
+    event_type?: string;
+    from_date?: string;
+    to_date?: string;
+  }): Promise<number> {
+    const { service_name, user_id, event_type, from_date, to_date } = params;
+    const queryParams: Record<string, string | number> = {};
+    const conditions: string[] = ['1=1'];
+
+    if (service_name) {
+      conditions.push('service_name = {serviceName:String}');
+      queryParams.serviceName = service_name;
+    }
+    if (user_id) {
+      conditions.push('user_id = {userId:String}');
+      queryParams.userId = user_id;
+    }
+    if (event_type) {
+      conditions.push('event_type = {eventType:String}');
+      queryParams.eventType = event_type;
+    }
+    if (from_date) {
+      conditions.push('date >= {fromDate:String}');
+      queryParams.fromDate = from_date;
+    }
+    if (to_date) {
+      conditions.push('date <= {toDate:String}');
+      queryParams.toDate = to_date;
+    }
+
+    const whereClause = conditions.join(' AND ');
+    const query = `SELECT count() as count FROM audit_logs WHERE ${whereClause}`;
+
+    try {
+      const resultSet = await this.clickhouse.query({
+        query,
+        query_params: queryParams,
+        format: 'JSONEachRow',
+      });
+      const data = await resultSet.json<{ count: string }>();
+      return parseInt(data[0].count, 10);
+    } catch (error) {
+      this.logger.error(`Failed to count audit logs: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
+
   async findAll(params: {
     service_name?: string;
     user_id?: string;
@@ -43,19 +92,34 @@ export class AuditRepository {
     offset?: number;
   }): Promise<AuditLog[]> {
     const { service_name, user_id, event_type, from_date, to_date, limit = 100, offset = 0 } = params;
+    const queryParams: Record<string, string | number> = {
+      limit,
+      offset
+    };
+    const conditions: string[] = ['1=1'];
 
-    let whereClause = '1=1';
-    const conditions: string[] = [];
-
-    if (service_name) conditions.push(`service_name = '${service_name}'`);
-    if (user_id) conditions.push(`user_id = '${user_id}'`);
-    if (event_type) conditions.push(`event_type = '${event_type}'`);
-    if (from_date) conditions.push(`date >= '${from_date}'`);
-    if (to_date) conditions.push(`date <= '${to_date}'`);
-
-    if (conditions.length > 0) {
-      whereClause = conditions.join(' AND ');
+    if (service_name) {
+      conditions.push('service_name = {serviceName:String}');
+      queryParams.serviceName = service_name;
     }
+    if (user_id) {
+      conditions.push('user_id = {userId:String}');
+      queryParams.userId = user_id;
+    }
+    if (event_type) {
+      conditions.push('event_type = {eventType:String}');
+      queryParams.eventType = event_type;
+    }
+    if (from_date) {
+      conditions.push('date >= {fromDate:String}');
+      queryParams.fromDate = from_date;
+    }
+    if (to_date) {
+      conditions.push('date <= {toDate:String}');
+      queryParams.toDate = to_date;
+    }
+
+    const whereClause = conditions.join(' AND ');
 
     const query = `
       SELECT
@@ -70,13 +134,14 @@ export class AuditRepository {
       FROM audit_logs
       WHERE ${whereClause}
       ORDER BY timestamp DESC
-      LIMIT ${limit}
-      OFFSET ${offset}
+      LIMIT {limit:Int32}
+      OFFSET {offset:Int32}
     `;
 
     try {
       const resultSet = await this.clickhouse.query({
         query,
+        query_params: queryParams,
         format: 'JSONEachRow',
       });
 
@@ -94,11 +159,21 @@ export class AuditRepository {
     to_date?: string;
   }): Promise<any[]> {
     const { service_name, from_date, to_date } = params;
-
+    const queryParams: Record<string, string> = {};
     const conditions: string[] = ['1=1'];
-    if (service_name) conditions.push(`service_name = '${service_name}'`);
-    if (from_date) conditions.push(`date >= '${from_date}'`);
-    if (to_date) conditions.push(`date <= '${to_date}'`);
+
+    if (service_name) {
+      conditions.push('service_name = {serviceName:String}');
+      queryParams.serviceName = service_name;
+    }
+    if (from_date) {
+      conditions.push('date >= {fromDate:String}');
+      queryParams.fromDate = from_date;
+    }
+    if (to_date) {
+      conditions.push('date <= {toDate:String}');
+      queryParams.toDate = to_date;
+    }
 
     const whereClause = conditions.join(' AND ');
 
@@ -116,6 +191,7 @@ export class AuditRepository {
     try {
       const resultSet = await this.clickhouse.query({
         query,
+        query_params: queryParams,
         format: 'JSONEachRow',
       });
 
@@ -132,10 +208,20 @@ export class AuditRepository {
     limit?: number;
   }): Promise<AuditLog[]> {
     const { from_date, to_date, limit = 100 } = params;
+    const queryParams: Record<string, string | number> = {
+      userId,
+      limit
+    };
+    const conditions: string[] = ['user_id = {userId:String}'];
 
-    const conditions: string[] = [`user_id = '${userId}'`];
-    if (from_date) conditions.push(`date >= '${from_date}'`);
-    if (to_date) conditions.push(`date <= '${to_date}'`);
+    if (from_date) {
+      conditions.push('date >= {fromDate:String}');
+      queryParams.fromDate = from_date;
+    }
+    if (to_date) {
+      conditions.push('date <= {toDate:String}');
+      queryParams.toDate = to_date;
+    }
 
     const whereClause = conditions.join(' AND ');
 
@@ -152,12 +238,13 @@ export class AuditRepository {
       FROM audit_logs
       WHERE ${whereClause}
       ORDER BY timestamp DESC
-      LIMIT ${limit}
+      LIMIT {limit:Int32}
     `;
 
     try {
       const resultSet = await this.clickhouse.query({
         query,
+        query_params: queryParams,
         format: 'JSONEachRow',
       });
 

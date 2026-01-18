@@ -16,10 +16,10 @@ import { Public, Roles, UserRole } from '@dpi/common';
 
 @Controller('hospitals')
 export class HospitalsController {
-  constructor(private readonly hospitalsService: HospitalsService) {}
+  constructor(private readonly hospitalsService: HospitalsService) { }
 
   @Post()
-  @Roles(UserRole.DEPARTMENT_ADMIN, UserRole.PLATFORM_ADMIN)
+  @Roles(UserRole.PLATFORM_ADMIN)
   create(@Body() createHospitalDto: CreateHospitalDto) {
     return this.hospitalsService.create(createHospitalDto);
   }
@@ -37,7 +37,7 @@ export class HospitalsController {
   }
 
   @Put(':id')
-  @Roles(UserRole.DEPARTMENT_ADMIN, UserRole.PLATFORM_ADMIN)
+  @Roles(UserRole.PLATFORM_ADMIN)
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateDto: Partial<CreateHospitalDto>,

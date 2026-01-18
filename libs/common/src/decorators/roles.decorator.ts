@@ -13,10 +13,10 @@ import { UserRole } from '../enums/user-role.enum';
  *   // Only platform admins can access this
  * }
  *
- * @Roles(UserRole.DEPARTMENT_ADMIN, UserRole.PLATFORM_ADMIN)
+ * @Roles(UserRole.SERVICE_PROVIDER, UserRole.PLATFORM_ADMIN)
  * @Get('/reports')
  * getReports() {
- *   // Department admins and platform admins can access this
+ *   // Service providers and platform admins can access this
  * }
  * ```
  *
