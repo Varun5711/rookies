@@ -15,6 +15,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { healthcareApi } from '@/lib/api/healthcare';
 import { Hospital } from '@/lib/types/healthcare';
 import { INDIAN_STATES } from '@/lib/constants';
+import { HOSPITAL_TYPE_OPTIONS } from '@/lib/constants/healthcare';
 
 export default function HospitalsPage() {
   const [page, setPage] = useState(1);
@@ -53,11 +54,7 @@ export default function HospitalsPage() {
           </div>
           <Select
             placeholder="All Types"
-            options={[
-              { value: '', label: 'All Types' },
-              { value: 'government', label: 'Government' },
-              { value: 'private', label: 'Private' },
-            ]}
+            options={HOSPITAL_TYPE_OPTIONS}
             value={type}
             onChange={(e) => setType(e.target.value)}
           />

@@ -32,13 +32,13 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
               block w-full rounded-lg border transition-colors duration-200
               ${leftIcon ? 'pl-10' : 'pl-4'}
               ${rightIcon ? 'pr-10' : 'pr-4'}
-              py-2.5 text-sm
+              py-2.5 text-sm text-slate-900 bg-white
               ${error
                 ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
                 : 'border-slate-200 focus:border-blue-500 focus:ring-blue-500'
               }
               focus:outline-none focus:ring-2 focus:ring-opacity-20
-              disabled:bg-slate-50 disabled:cursor-not-allowed
+              disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed
               placeholder:text-slate-400
               ${className}
             `}

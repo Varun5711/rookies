@@ -22,6 +22,7 @@ import {
   LayoutDashboard,
   Users,
   Server,
+  Shield,
   X
 } from 'lucide-react';
 import { useUIStore } from '@/lib/store/uiStore';
@@ -76,6 +77,7 @@ const citizenNavItems: SidebarItem[] = [
 const adminNavItems: SidebarItem[] = [
   { label: 'Dashboard', href: '/admin/dashboard', icon: <LayoutDashboard size={20} /> },
   { label: 'Service Registry', href: '/admin/services', icon: <Server size={20} /> },
+  { label: 'Audit Logs', href: '/admin/audit', icon: <Shield size={20} /> },
   {
     label: 'Healthcare',
     href: '/admin/healthcare',

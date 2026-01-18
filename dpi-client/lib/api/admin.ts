@@ -4,7 +4,7 @@ export const adminApi = {
   // Healthcare Admin
   createHospital: async (data: Record<string, unknown>) => {
     const response = await apiClient.post(
-      '/services/healthcare/hospitals',
+      '/services/healthcare/admin/hospitals',
       data,
     );
     return response.data.data;
@@ -12,7 +12,7 @@ export const adminApi = {
 
   updateHospital: async (id: string, data: Record<string, unknown>) => {
     const response = await apiClient.put(
-      `/services/healthcare/hospitals/${id}`,
+      `/services/healthcare/admin/hospitals/${id}`,
       data,
     );
     return response.data.data;
@@ -20,19 +20,19 @@ export const adminApi = {
 
   deleteHospital: async (id: string) => {
     const response = await apiClient.delete(
-      `/services/healthcare/hospitals/${id}`,
+      `/services/healthcare/admin/hospitals/${id}`,
     );
     return response.data;
   },
 
   createDoctor: async (data: Record<string, unknown>) => {
-    const response = await apiClient.post('/services/healthcare/doctors', data);
+    const response = await apiClient.post('/services/healthcare/admin/doctors', data);
     return response.data.data;
   },
 
   updateDoctor: async (id: string, data: Record<string, unknown>) => {
     const response = await apiClient.put(
-      `/services/healthcare/doctors/${id}`,
+      `/services/healthcare/admin/doctors/${id}`,
       data,
     );
     return response.data.data;
@@ -40,13 +40,13 @@ export const adminApi = {
 
   deleteDoctor: async (id: string) => {
     const response = await apiClient.delete(
-      `/services/healthcare/doctors/${id}`,
+      `/services/healthcare/admin/doctors/${id}`,
     );
     return response.data;
   },
 
   getAllAppointments: async (filters?: Record<string, unknown>) => {
-    const response = await apiClient.get('/services/healthcare/appointments', {
+    const response = await apiClient.get('/services/healthcare/admin/appointments', {
       params: filters,
     });
     return response.data;
@@ -55,7 +55,7 @@ export const adminApi = {
   // Time Slots
   createTimeSlot: async (doctorId: string, data: Record<string, unknown>) => {
     const response = await apiClient.post(
-      `/services/healthcare/doctors/${doctorId}/slots`,
+      `/services/healthcare/admin/doctors/${doctorId}/slots`,
       data,
     );
     return response.data.data;
@@ -63,7 +63,7 @@ export const adminApi = {
 
   updateTimeSlot: async (slotId: string, data: Record<string, unknown>) => {
     const response = await apiClient.put(
-      `/services/healthcare/doctors/slots/${slotId}`,
+      `/services/healthcare/admin/doctors/slots/${slotId}`,
       data,
     );
     return response.data.data;
@@ -71,7 +71,7 @@ export const adminApi = {
 
   deleteTimeSlot: async (slotId: string) => {
     const response = await apiClient.delete(
-      `/services/healthcare/doctors/slots/${slotId}`,
+      `/services/healthcare/admin/doctors/slots/${slotId}`,
     );
     return response.data;
   },
@@ -89,7 +89,7 @@ export const adminApi = {
 
   // Urban Admin
   getAllGrievances: async (filters?: Record<string, unknown>) => {
-    const response = await apiClient.get('/services/urban/grievances', {
+    const response = await apiClient.get('/services/urban/admin/grievances', {
       params: filters,
     });
     return response.data;
@@ -97,7 +97,7 @@ export const adminApi = {
 
   updateGrievanceStatus: async (id: string, data: Record<string, unknown>) => {
     const response = await apiClient.put(
-      `/services/urban/grievances/${id}/status`,
+      `/services/urban/admin/grievances/${id}/status`,
       data,
     );
     return response.data.data;
@@ -106,7 +106,7 @@ export const adminApi = {
   // Agriculture Admin
   createScheme: async (data: Record<string, unknown>) => {
     const response = await apiClient.post(
-      '/services/agriculture/schemes',
+      '/services/agriculture/admin/schemes',
       data,
     );
     return response.data.data;
@@ -114,7 +114,7 @@ export const adminApi = {
 
   updateScheme: async (id: string, data: Record<string, unknown>) => {
     const response = await apiClient.put(
-      `/services/agriculture/schemes/${id}`,
+      `/services/agriculture/admin/schemes/${id}`,
       data,
     );
     return response.data.data;
@@ -122,14 +122,14 @@ export const adminApi = {
 
   deleteScheme: async (id: string) => {
     const response = await apiClient.delete(
-      `/services/agriculture/schemes/${id}`,
+      `/services/agriculture/admin/schemes/${id}`,
     );
     return response.data;
   },
 
   createAdvisory: async (data: Record<string, unknown>) => {
     const response = await apiClient.post(
-      '/services/agriculture/advisories',
+      '/services/agriculture/admin/advisories',
       data,
     );
     return response.data.data;
@@ -137,7 +137,7 @@ export const adminApi = {
 
   updateAdvisory: async (id: string, data: Record<string, unknown>) => {
     const response = await apiClient.put(
-      `/services/agriculture/advisories/${id}`,
+      `/services/agriculture/admin/advisories/${id}`,
       data,
     );
     return response.data.data;
@@ -145,27 +145,27 @@ export const adminApi = {
 
   deleteAdvisory: async (id: string) => {
     const response = await apiClient.delete(
-      `/services/agriculture/advisories/${id}`,
+      `/services/agriculture/admin/advisories/${id}`,
     );
     return response.data;
   },
 
   // Category management
   createCategory: async (data: Record<string, unknown>) => {
-    const response = await apiClient.post('/services/urban/categories', data);
+    const response = await apiClient.post('/services/urban/admin/categories', data);
     return response.data.data;
   },
 
   updateCategory: async (id: string, data: Record<string, unknown>) => {
     const response = await apiClient.put(
-      `/services/urban/categories/${id}`,
+      `/services/urban/admin/categories/${id}`,
       data,
     );
     return response.data.data;
   },
 
   deleteCategory: async (id: string) => {
-    const response = await apiClient.delete(`/services/urban/categories/${id}`);
+    const response = await apiClient.delete(`/services/urban/admin/categories/${id}`);
     return response.data;
   },
 };
