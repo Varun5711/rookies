@@ -134,7 +134,7 @@ const Healthcare: React.FC = () => {
         </div>
       </header>
 
-      {/* --- Breadcrumbs --- */}
+   
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <div className="flex items-center text-xs text-slate-500 gap-2">
           <a href="#" className="hover:text-blue-700">Home</a>
