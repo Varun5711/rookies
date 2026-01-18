@@ -1,3 +1,13 @@
+/**
+ * User Role Enum
+ * Matches backend UserRole enum in @dpi/common
+ */
+export enum UserRole {
+  CITIZEN = 'citizen',
+  SERVICE_PROVIDER = 'service_provider',
+  PLATFORM_ADMIN = 'platform_admin',
+}
+
 export interface User {
   id: string;
   mobile?: string;

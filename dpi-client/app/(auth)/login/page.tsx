@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { authApi } from '@/lib/api/auth';
 import { useAuthStore } from '@/lib/store/authStore';
+import { UserRole } from '@/lib/types/auth';
 
 const mobileSchema = z.object({
   mobile: z.string().regex(/^[6-9]\d{9}$/, 'Please enter a valid 10-digit mobile number'),
@@ -63,8 +64,8 @@ export default function LoginPage() {
       setAuth(response.user, response.tokens.accessToken, response.tokens.refreshToken);
       toast.success('Login successful!');
 
-      // Redirect based on role
-      if (response.user.roles.includes('admin')) {
+      // ✅ Redirect based on role
+      if (response.user.roles.includes(UserRole.PLATFORM_ADMIN)) {
         router.push('/admin/dashboard');
       } else {
         router.push('/dashboard');

@@ -75,14 +75,12 @@ const citizenNavItems: SidebarItem[] = [
 
 const adminNavItems: SidebarItem[] = [
   { label: 'Dashboard', href: '/admin/dashboard', icon: <LayoutDashboard size={20} /> },
-  { label: 'Services', href: '/admin/services', icon: <Server size={20} /> },
+  { label: 'Service Registry', href: '/admin/services', icon: <Server size={20} /> },
   {
     label: 'Healthcare',
     href: '/admin/healthcare',
     icon: <Heart size={20} />,
     children: [
-      { label: 'Hospitals', href: '/admin/healthcare/hospitals', icon: <Building2 size={18} /> },
-      { label: 'Doctors', href: '/admin/healthcare/doctors', icon: <Stethoscope size={18} /> },
       { label: 'Appointments', href: '/admin/healthcare/appointments', icon: <CalendarDays size={18} /> },
     ],
   },
@@ -92,17 +90,15 @@ const adminNavItems: SidebarItem[] = [
     icon: <Leaf size={20} />,
     children: [
       { label: 'Schemes', href: '/admin/agriculture/schemes', icon: <FileText size={18} /> },
-      { label: 'Advisories', href: '/admin/agriculture/advisories', icon: <BookOpen size={18} /> },
-      { label: 'Market Prices', href: '/admin/agriculture/market-prices', icon: <TrendingUp size={18} /> },
+      { label: 'Applications', href: '/admin/agriculture/applications', icon: <ClipboardList size={18} /> },
     ],
   },
   {
-    label: 'Urban',
+    label: 'Urban Services',
     href: '/admin/urban',
     icon: <Building size={20} />,
     children: [
       { label: 'Grievances', href: '/admin/urban/grievances', icon: <AlertCircle size={18} /> },
-      { label: 'Categories', href: '/admin/urban/categories', icon: <LayoutDashboard size={18} /> },
     ],
   },
   { label: 'Users', href: '/admin/users', icon: <Users size={20} /> },

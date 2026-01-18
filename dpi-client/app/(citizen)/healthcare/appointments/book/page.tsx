@@ -231,7 +231,7 @@ export default function BookAppointmentPage() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {(hospitalsData?.data || []).map((hospital: Hospital) => (
+                  {(Array.isArray(hospitalsData?.data) ? hospitalsData.data : []).map((hospital: Hospital) => (
                     <div
                       key={hospital.id}
                       onClick={() => setSelectedHospital(hospital)}

@@ -27,6 +27,11 @@ procs:
     env:
       NODE_ENV: "development"
 
+  analytics-svc:
+    shell: "bunx dotenv run ./node_modules/.bin/ts-node -r tsconfig-paths/register -P apps/analytics-svc/tsconfig.app.json apps/analytics-svc/src/main.ts"
+    env:
+      NODE_ENV: "development"
+
   agriculture-svc:
     shell: "bunx dotenv run ./node_modules/.bin/ts-node -r tsconfig-paths/register -P apps/agriculture-svc/tsconfig.app.json apps/agriculture-svc/src/main.ts"
     env:

@@ -17,8 +17,9 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { PageSkeleton } from '@/components/ui/Skeleton';
 import { adminApi } from '@/lib/api/admin';
+import { AdminGuard } from '@/components/guards/AdminGuard';
 
-export default function ServicesPage() {
+function ServicesContent() {
   const { data: services, isLoading, refetch } = useQuery({
     queryKey: ['adminServices'],
     queryFn: () => adminApi.getServices(),
@@ -223,5 +224,13 @@ export default function ServicesPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function ServicesPage() {
+  return (
+    <AdminGuard>
+      <ServicesContent />
+    </AdminGuard>
   );
 }

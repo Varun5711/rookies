@@ -1,6 +1,7 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   CalendarDays,
@@ -17,9 +18,18 @@ import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { StatusBadge } from '@/components/ui/Badge';
 import { useAuthStore } from '@/lib/store/authStore';
+import { UserRole } from '@/lib/types/auth';
 
 export default function DashboardPage() {
+  const router = useRouter();
   const { user } = useAuthStore();
+
+  // ✅ BLOCK ADMINS - Redirect to admin dashboard
+  useEffect(() => {
+    if (user?.roles.includes(UserRole.PLATFORM_ADMIN)) {
+      router.replace('/admin/dashboard');
+    }
+  }, [user, router]);
 
   const quickStats = [
     {

@@ -6,6 +6,7 @@ import { Navbar } from '@/components/layout/Navbar';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Footer } from '@/components/layout/Footer';
 import { useAuthStore } from '@/lib/store/authStore';
+import { UserRole } from '@/lib/types/auth';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -19,7 +20,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
 
     // Check if user is admin
-    if (user && !user.roles.includes('platform_admin')) {
+    if (user && !user.roles.includes(UserRole.PLATFORM_ADMIN)) {
       router.push('/dashboard');
       return;
     }
