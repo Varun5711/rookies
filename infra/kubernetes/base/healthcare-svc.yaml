@@ -1,0 +1,99 @@
+# Healthcare Service Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: healthcare-svc
+  namespace: bharatsetu
+  labels:
+    app: healthcare-svc
+    app.kubernetes.io/name: healthcare-svc
+    app.kubernetes.io/component: service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: healthcare-svc
+  template:
+    metadata:
+      labels:
+        app: healthcare-svc
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3002"
+    spec:
+      serviceAccountName: bharatsetu-sa
+      containers:
+        - name: healthcare-svc
+          image: ${DOCKER_REGISTRY}/bharatsetu/healthcare-svc:${IMAGE_TAG}
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3002
+          envFrom:
+            - configMapRef:
+                name: bharatsetu-config
+            - configMapRef:
+                name: database-config
+            - secretRef:
+                name: bharatsetu-secrets
+          env:
+            - name: PORT
+              value: "3002"
+            - name: DATABASE_NAME
+              value: "bharatsetu_healthcare"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3002
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3002
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1001
+      imagePullSecrets:
+        - name: docker-registry-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: healthcare-svc-service
+  namespace: bharatsetu
+spec:
+  type: ClusterIP
+  ports:
+    - port: 3002
+      targetPort: 3002
+  selector:
+    app: healthcare-svc
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: healthcare-svc-hpa
+  namespace: bharatsetu
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: healthcare-svc
+  minReplicas: 2
+  maxReplicas: 8
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70

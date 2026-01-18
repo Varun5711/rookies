@@ -1,0 +1,534 @@
+version: '3.8'
+
+# ============================================================================
+# BharatSetu DPI Platform - Complete Docker Compose Stack
+# ============================================================================
+# This file contains all services needed for local development and production
+# Includes: All microservices, databases, message queue, and monitoring
+# ============================================================================
+
+x-common-variables: &common-variables
+  NODE_ENV: ${NODE_ENV:-development}
+  JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+  JWT_EXPIRATION: ${JWT_EXPIRATION:-1d}
+  REDIS_HOST: redis
+  REDIS_PORT: 6379
+  KAFKA_BROKERS: kafka:9093
+
+x-healthcheck-defaults: &healthcheck-defaults
+  interval: 30s
+  timeout: 10s
+  retries: 5
+  start_period: 40s
+
+services:
+  # ==========================================================================
+  # INFRASTRUCTURE SERVICES
+  # ==========================================================================
+
+  # PostgreSQL - Main Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: bharatsetu-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/init-scripts:/docker-entrypoint-initdb.d
+    networks:
+      - bharatsetu-network
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+
+  # Redis - Caching & Session Management
+  redis:
+    image: redis:7.0-alpine
+    container_name: bharatsetu-redis
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    networks:
+      - bharatsetu-network
+    command: redis-server --appendonly yes
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD", "redis-cli", "ping"]
+
+  # Zookeeper - Required for Kafka
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: bharatsetu-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - '2181:2181'
+    networks:
+      - bharatsetu-network
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD", "nc", "-z", "localhost", "2181"]
+
+  # Kafka - Event Streaming
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: bharatsetu-kafka
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    ports:
+      - '9092:9092'
+      - '9093:9093'
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9093,PLAINTEXT_HOST://localhost:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      KAFKA_LOG4J_ROOT_LOGLEVEL: WARN
+    networks:
+      - bharatsetu-network
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+
+  # Kafka UI - Web UI for Kafka Management
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: bharatsetu-kafka-ui
+    depends_on:
+      kafka:
+        condition: service_healthy
+    ports:
+      - '8080:8080'
+    environment:
+      KAFKA_CLUSTERS_0_NAME: bharatsetu
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9093
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+    networks:
+      - bharatsetu-network
+
+  # ClickHouse - Analytical Database for Audit Logs
+  clickhouse:
+    image: clickhouse/clickhouse-server:23.8-alpine
+    container_name: bharatsetu-clickhouse
+    restart: unless-stopped
+    ports:
+      - '8123:8123'
+      - '9000:9000'
+    environment:
+      CLICKHOUSE_DB: ${CLICKHOUSE_DB:-bharatsetu_audit}
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-default}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-clickhouse}
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - ./docker/init-scripts/clickhouse:/docker-entrypoint-initdb.d
+    networks:
+      - bharatsetu-network
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD", "clickhouse-client", "--query", "SELECT 1"]
+
+  # ==========================================================================
+  # MONITORING STACK
+  # ==========================================================================
+
+  # Prometheus - Metrics Collection
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    container_name: bharatsetu-prometheus
+    restart: unless-stopped
+    ports:
+      - '9090:9090'
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/prometheus/alert_rules.yml:/etc/prometheus/alert_rules.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+      - '--storage.tsdb.retention.time=30d'
+    networks:
+      - bharatsetu-network
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9090/-/healthy"]
+
+  # Grafana - Visualization & Dashboards
+  grafana:
+    image: grafana/grafana:10.2.0
+    container_name: bharatsetu-grafana
+    restart: unless-stopped
+    ports:
+      - '3030:3000'
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: 'false'
+      GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-http://localhost:3030}
+      GF_INSTALL_PLUGINS: grafana-clock-panel,grafana-piechart-panel
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    networks:
+      - bharatsetu-network
+    depends_on:
+      - prometheus
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
+
+  # AlertManager - Alert Management
+  alertmanager:
+    image: prom/alertmanager:v0.26.0
+    container_name: bharatsetu-alertmanager
+    restart: unless-stopped
+    ports:
+      - '9093:9093'
+    volumes:
+      - ./monitoring/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+    networks:
+      - bharatsetu-network
+
+  # Node Exporter - Host Metrics
+  node-exporter:
+    image: prom/node-exporter:v1.7.0
+    container_name: bharatsetu-node-exporter
+    restart: unless-stopped
+    ports:
+      - '9100:9100'
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    networks:
+      - bharatsetu-network
+
+  # cAdvisor - Container Metrics
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.47.2
+    container_name: bharatsetu-cadvisor
+    restart: unless-stopped
+    ports:
+      - '8081:8080'
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    privileged: true
+    networks:
+      - bharatsetu-network
+
+  # ==========================================================================
+  # APPLICATION SERVICES
+  # ==========================================================================
+
+  # Service Registry
+  service-registry:
+    build:
+      context: ..
+      dockerfile: infra/dockerfiles/Dockerfile.service-registry
+    container_name: bharatsetu-service-registry
+    restart: unless-stopped
+    ports:
+      - '3010:3010'
+    environment:
+      <<: *common-variables
+      PORT: 3010
+    networks:
+      - bharatsetu-network
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3010/health"]
+
+  # API Gateway
+  api-gateway:
+    build:
+      context: ..
+      dockerfile: infra/dockerfiles/Dockerfile.api-gateway
+    container_name: bharatsetu-api-gateway
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    environment:
+      <<: *common-variables
+      PORT: 3000
+      AUTH_SERVICE_URL: http://auth-svc:3001
+      HEALTHCARE_SERVICE_URL: http://healthcare-svc:3002
+      AGRICULTURE_SERVICE_URL: http://agriculture-svc:3003
+      URBAN_SERVICE_URL: http://urban-svc:3004
+      NOTIFICATION_SERVICE_URL: http://notification-svc:3005
+      AUDIT_SERVICE_URL: http://audit-svc:3006
+      ANALYTICS_SERVICE_URL: http://analytics-svc:3007
+    networks:
+      - bharatsetu-network
+    depends_on:
+      - auth-svc
+      - service-registry
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/health"]
+
+  # Auth Service
+  auth-svc:
+    build:
+      context: ..
+      dockerfile: infra/dockerfiles/Dockerfile.auth-svc
+    container_name: bharatsetu-auth-svc
+    restart: unless-stopped
+    ports:
+      - '3001:3001'
+    environment:
+      <<: *common-variables
+      PORT: 3001
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_USER: ${POSTGRES_USER:-postgres}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      DATABASE_NAME: bharatsetu_auth
+    networks:
+      - bharatsetu-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3001/health"]
+
+  # Healthcare Service
+  healthcare-svc:
+    build:
+      context: ..
+      dockerfile: infra/dockerfiles/Dockerfile.healthcare-svc
+    container_name: bharatsetu-healthcare-svc
+    restart: unless-stopped
+    ports:
+      - '3002:3002'
+    environment:
+      <<: *common-variables
+      PORT: 3002
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_USER: ${POSTGRES_USER:-postgres}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      DATABASE_NAME: bharatsetu_healthcare
+    networks:
+      - bharatsetu-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3002/health"]
+
+  # Agriculture Service
+  agriculture-svc:
+    build:
+      context: ..
+      dockerfile: infra/dockerfiles/Dockerfile.agriculture-svc
+    container_name: bharatsetu-agriculture-svc
+    restart: unless-stopped
+    ports:
+      - '3003:3003'
+    environment:
+      <<: *common-variables
+      PORT: 3003
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_USER: ${POSTGRES_USER:-postgres}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      DATABASE_NAME: bharatsetu_agriculture
+    networks:
+      - bharatsetu-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3003/health"]
+
+  # Urban Service
+  urban-svc:
+    build:
+      context: ..
+      dockerfile: infra/dockerfiles/Dockerfile.urban-svc
+    container_name: bharatsetu-urban-svc
+    restart: unless-stopped
+    ports:
+      - '3004:3004'
+    environment:
+      <<: *common-variables
+      PORT: 3004
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_USER: ${POSTGRES_USER:-postgres}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      DATABASE_NAME: bharatsetu_urban
+    networks:
+      - bharatsetu-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3004/health"]
+
+  # Notification Service
+  notification-svc:
+    build:
+      context: ..
+      dockerfile: infra/dockerfiles/Dockerfile.notification-svc
+    container_name: bharatsetu-notification-svc
+    restart: unless-stopped
+    ports:
+      - '3005:3005'
+    environment:
+      <<: *common-variables
+      PORT: 3005
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
+      TWILIO_PHONE_NUMBER: ${TWILIO_PHONE_NUMBER:-}
+    networks:
+      - bharatsetu-network
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3005/health"]
+
+  # Audit Service
+  audit-svc:
+    build:
+      context: ..
+      dockerfile: infra/dockerfiles/Dockerfile.audit-svc
+    container_name: bharatsetu-audit-svc
+    restart: unless-stopped
+    ports:
+      - '3006:3006'
+    environment:
+      <<: *common-variables
+      PORT: 3006
+      CLICKHOUSE_HOST: clickhouse
+      CLICKHOUSE_PORT: 8123
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-default}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-clickhouse}
+      CLICKHOUSE_DATABASE: ${CLICKHOUSE_DB:-bharatsetu_audit}
+    networks:
+      - bharatsetu-network
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3006/health"]
+
+  # Analytics Service
+  analytics-svc:
+    build:
+      context: ..
+      dockerfile: infra/dockerfiles/Dockerfile.analytics-svc
+    container_name: bharatsetu-analytics-svc
+    restart: unless-stopped
+    ports:
+      - '3007:3007'
+    environment:
+      <<: *common-variables
+      PORT: 3007
+      CLICKHOUSE_HOST: clickhouse
+      CLICKHOUSE_PORT: 8123
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-default}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-clickhouse}
+      CLICKHOUSE_DATABASE: ${CLICKHOUSE_DB:-bharatsetu_audit}
+    networks:
+      - bharatsetu-network
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3007/health"]
+
+  # DPI Client (Frontend)
+  dpi-client:
+    build:
+      context: ..
+      dockerfile: infra/dockerfiles/Dockerfile.dpi-client
+    container_name: bharatsetu-dpi-client
+    restart: unless-stopped
+    ports:
+      - '3080:3000'
+    environment:
+      NEXT_PUBLIC_API_URL: http://api-gateway:3000
+    networks:
+      - bharatsetu-network
+    depends_on:
+      - api-gateway
+    healthcheck:
+      <<: *healthcheck-defaults
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000"]
+
+# ==========================================================================
+# VOLUMES
+# ==========================================================================
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  clickhouse_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  alertmanager_data:
+    driver: local
+
+# ==========================================================================
+# NETWORKS
+# ==========================================================================
+networks:
+  bharatsetu-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16

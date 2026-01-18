@@ -1,0 +1,46 @@
+# ConfigMaps for BharatSetu Platform
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bharatsetu-config
+  namespace: bharatsetu
+  labels:
+    app.kubernetes.io/name: bharatsetu
+    app.kubernetes.io/component: config
+data:
+  NODE_ENV: "production"
+  JWT_EXPIRATION: "1d"
+  REDIS_HOST: "redis-service"
+  REDIS_PORT: "6379"
+  KAFKA_BROKERS: "kafka-service:9092"
+  
+  # Service URLs (internal)
+  AUTH_SERVICE_URL: "http://auth-svc-service:3001"
+  HEALTHCARE_SERVICE_URL: "http://healthcare-svc-service:3002"
+  AGRICULTURE_SERVICE_URL: "http://agriculture-svc-service:3003"
+  URBAN_SERVICE_URL: "http://urban-svc-service:3004"
+  NOTIFICATION_SERVICE_URL: "http://notification-svc-service:3005"
+  AUDIT_SERVICE_URL: "http://audit-svc-service:3006"
+  ANALYTICS_SERVICE_URL: "http://analytics-svc-service:3007"
+  
+  # Database
+  DATABASE_HOST: "postgres-service"
+  DATABASE_PORT: "5432"
+  
+  # ClickHouse
+  CLICKHOUSE_HOST: "clickhouse-service"
+  CLICKHOUSE_PORT: "8123"
+---
+# Database ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: database-config
+  namespace: bharatsetu
+  labels:
+    app.kubernetes.io/name: bharatsetu
+    app.kubernetes.io/component: database
+data:
+  POSTGRES_USER: "postgres"
+  CLICKHOUSE_USER: "default"
+  CLICKHOUSE_DB: "bharatsetu_audit"

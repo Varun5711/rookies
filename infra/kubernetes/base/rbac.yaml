@@ -1,0 +1,111 @@
+# Service Account and RBAC
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: bharatsetu-sa
+  namespace: bharatsetu
+  labels:
+    app.kubernetes.io/name: bharatsetu
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: bharatsetu-role
+  namespace: bharatsetu
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps", "secrets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["services"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: bharatsetu-role-binding
+  namespace: bharatsetu
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: bharatsetu-role
+subjects:
+  - kind: ServiceAccount
+    name: bharatsetu-sa
+    namespace: bharatsetu
+---
+# Network Policy - Allow internal traffic only
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: bharatsetu-network-policy
+  namespace: bharatsetu
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow traffic from within the namespace
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: bharatsetu
+    # Allow traffic from ingress controller
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+    # Allow traffic from monitoring namespace
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: monitoring
+  egress:
+    # Allow traffic to within the namespace
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: bharatsetu
+    # Allow DNS
+    - to:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+    # Allow external HTTPS
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - protocol: TCP
+          port: 443
+---
+# Pod Disruption Budget
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: api-gateway-pdb
+  namespace: bharatsetu
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: api-gateway
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: auth-svc-pdb
+  namespace: bharatsetu
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: auth-svc

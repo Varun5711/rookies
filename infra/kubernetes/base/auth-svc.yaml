@@ -1,0 +1,105 @@
+# Auth Service Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-svc
+  namespace: bharatsetu
+  labels:
+    app: auth-svc
+    app.kubernetes.io/name: auth-svc
+    app.kubernetes.io/component: service
+    app.kubernetes.io/part-of: bharatsetu
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: auth-svc
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: auth-svc
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3001"
+    spec:
+      serviceAccountName: bharatsetu-sa
+      containers:
+        - name: auth-svc
+          image: ${DOCKER_REGISTRY}/bharatsetu/auth-svc:${IMAGE_TAG}
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3001
+          envFrom:
+            - configMapRef:
+                name: bharatsetu-config
+            - configMapRef:
+                name: database-config
+            - secretRef:
+                name: bharatsetu-secrets
+          env:
+            - name: PORT
+              value: "3001"
+            - name: DATABASE_NAME
+              value: "bharatsetu_auth"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3001
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3001
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1001
+      imagePullSecrets:
+        - name: docker-registry-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-svc-service
+  namespace: bharatsetu
+spec:
+  type: ClusterIP
+  ports:
+    - port: 3001
+      targetPort: 3001
+  selector:
+    app: auth-svc
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: auth-svc-hpa
+  namespace: bharatsetu
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: auth-svc
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70

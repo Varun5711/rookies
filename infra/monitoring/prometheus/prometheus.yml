@@ -1,0 +1,127 @@
+# Prometheus Configuration for BharatSetu DPI Platform
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'bharatsetu-cluster'
+    env: 'production'
+
+# Alerting configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager:9093
+
+# Rule files
+rule_files:
+  - /etc/prometheus/alert_rules.yml
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    metrics_path: /metrics
+
+  # Node Exporter - Host metrics
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        regex: '([^:]+):\d+'
+        replacement: '${1}'
+
+  # cAdvisor - Container metrics
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        regex: '([^:]+):\d+'
+        replacement: '${1}'
+
+  # API Gateway
+  - job_name: 'api-gateway'
+    static_configs:
+      - targets: ['api-gateway:3000']
+    metrics_path: /metrics
+    scrape_interval: 10s
+
+  # Auth Service
+  - job_name: 'auth-svc'
+    static_configs:
+      - targets: ['auth-svc:3001']
+    metrics_path: /metrics
+    scrape_interval: 10s
+
+  # Healthcare Service
+  - job_name: 'healthcare-svc'
+    static_configs:
+      - targets: ['healthcare-svc:3002']
+    metrics_path: /metrics
+    scrape_interval: 10s
+
+  # Agriculture Service
+  - job_name: 'agriculture-svc'
+    static_configs:
+      - targets: ['agriculture-svc:3003']
+    metrics_path: /metrics
+    scrape_interval: 10s
+
+  # Urban Service
+  - job_name: 'urban-svc'
+    static_configs:
+      - targets: ['urban-svc:3004']
+    metrics_path: /metrics
+    scrape_interval: 10s
+
+  # Notification Service
+  - job_name: 'notification-svc'
+    static_configs:
+      - targets: ['notification-svc:3005']
+    metrics_path: /metrics
+    scrape_interval: 10s
+
+  # Audit Service
+  - job_name: 'audit-svc'
+    static_configs:
+      - targets: ['audit-svc:3006']
+    metrics_path: /metrics
+    scrape_interval: 10s
+
+  # Analytics Service
+  - job_name: 'analytics-svc'
+    static_configs:
+      - targets: ['analytics-svc:3007']
+    metrics_path: /metrics
+    scrape_interval: 10s
+
+  # Service Registry
+  - job_name: 'service-registry'
+    static_configs:
+      - targets: ['service-registry:3010']
+    metrics_path: /metrics
+    scrape_interval: 10s
+
+  # Redis Exporter (if using redis-exporter)
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']
+    metrics_path: /metrics
+
+  # PostgreSQL (if using postgres-exporter)
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres:5432']
+    metrics_path: /metrics
+
+  # Kafka metrics (JMX Exporter if configured)
+  - job_name: 'kafka'
+    static_configs:
+      - targets: ['kafka:9092']
+    metrics_path: /metrics

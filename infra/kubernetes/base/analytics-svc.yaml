@@ -1,0 +1,77 @@
+# Analytics Service Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analytics-svc
+  namespace: bharatsetu
+  labels:
+    app: analytics-svc
+    app.kubernetes.io/name: analytics-svc
+    app.kubernetes.io/component: service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: analytics-svc
+  template:
+    metadata:
+      labels:
+        app: analytics-svc
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3007"
+    spec:
+      serviceAccountName: bharatsetu-sa
+      containers:
+        - name: analytics-svc
+          image: ${DOCKER_REGISTRY}/bharatsetu/analytics-svc:${IMAGE_TAG}
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3007
+          envFrom:
+            - configMapRef:
+                name: bharatsetu-config
+            - configMapRef:
+                name: database-config
+            - secretRef:
+                name: bharatsetu-secrets
+          env:
+            - name: PORT
+              value: "3007"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3007
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3007
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1001
+      imagePullSecrets:
+        - name: docker-registry-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: analytics-svc-service
+  namespace: bharatsetu
+spec:
+  type: ClusterIP
+  ports:
+    - port: 3007
+      targetPort: 3007
+  selector:
+    app: analytics-svc

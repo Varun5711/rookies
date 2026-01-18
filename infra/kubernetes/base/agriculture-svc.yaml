@@ -1,0 +1,99 @@
+# Agriculture Service Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agriculture-svc
+  namespace: bharatsetu
+  labels:
+    app: agriculture-svc
+    app.kubernetes.io/name: agriculture-svc
+    app.kubernetes.io/component: service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: agriculture-svc
+  template:
+    metadata:
+      labels:
+        app: agriculture-svc
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3003"
+    spec:
+      serviceAccountName: bharatsetu-sa
+      containers:
+        - name: agriculture-svc
+          image: ${DOCKER_REGISTRY}/bharatsetu/agriculture-svc:${IMAGE_TAG}
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3003
+          envFrom:
+            - configMapRef:
+                name: bharatsetu-config
+            - configMapRef:
+                name: database-config
+            - secretRef:
+                name: bharatsetu-secrets
+          env:
+            - name: PORT
+              value: "3003"
+            - name: DATABASE_NAME
+              value: "bharatsetu_agriculture"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3003
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3003
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1001
+      imagePullSecrets:
+        - name: docker-registry-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: agriculture-svc-service
+  namespace: bharatsetu
+spec:
+  type: ClusterIP
+  ports:
+    - port: 3003
+      targetPort: 3003
+  selector:
+    app: agriculture-svc
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: agriculture-svc-hpa
+  namespace: bharatsetu
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: agriculture-svc
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70

@@ -1,0 +1,75 @@
+# Notification Service Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-svc
+  namespace: bharatsetu
+  labels:
+    app: notification-svc
+    app.kubernetes.io/name: notification-svc
+    app.kubernetes.io/component: service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: notification-svc
+  template:
+    metadata:
+      labels:
+        app: notification-svc
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3005"
+    spec:
+      serviceAccountName: bharatsetu-sa
+      containers:
+        - name: notification-svc
+          image: ${DOCKER_REGISTRY}/bharatsetu/notification-svc:${IMAGE_TAG}
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3005
+          envFrom:
+            - configMapRef:
+                name: bharatsetu-config
+            - secretRef:
+                name: bharatsetu-secrets
+          env:
+            - name: PORT
+              value: "3005"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3005
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3005
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1001
+      imagePullSecrets:
+        - name: docker-registry-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification-svc-service
+  namespace: bharatsetu
+spec:
+  type: ClusterIP
+  ports:
+    - port: 3005
+      targetPort: 3005
+  selector:
+    app: notification-svc

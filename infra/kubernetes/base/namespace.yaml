@@ -1,0 +1,18 @@
+# Kubernetes Namespace for BharatSetu
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: bharatsetu
+  labels:
+    name: bharatsetu
+    app.kubernetes.io/name: bharatsetu
+    app.kubernetes.io/part-of: bharatsetu-platform
+---
+# Namespace for Monitoring Stack
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+  labels:
+    name: monitoring
+    app.kubernetes.io/name: monitoring
