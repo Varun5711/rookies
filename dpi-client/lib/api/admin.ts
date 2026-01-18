@@ -76,15 +76,15 @@ export const adminApi = {
     return response.data;
   },
 
-  // Service Registry
+  // Service Registry (direct access through /registry/* route)
   getServices: async () => {
     const response = await apiClient.get('/registry/services');
-    return response.data.data;
+    return response.data.services || [];
   },
 
   getPlatformHealth: async () => {
     const response = await apiClient.get('/registry/health');
-    return response.data.data;
+    return response.data.platformHealth;
   },
 
   // Urban Admin

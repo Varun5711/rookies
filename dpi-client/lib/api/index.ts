@@ -5,3 +5,5 @@ export { healthcareApi } from './healthcare';
 export { agricultureApi } from './agriculture';
 export { urbanApi } from './urban';
 export { adminApi } from './admin';
+export { citizenApi } from './citizen';
+export { platformApi } from './platform';

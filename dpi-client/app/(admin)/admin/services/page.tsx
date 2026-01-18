@@ -9,8 +9,6 @@ import {
   Clock,
   RefreshCw,
   Activity,
-  Cpu,
-  HardDrive
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -18,6 +16,16 @@ import { Button } from '@/components/ui/Button';
 import { PageSkeleton } from '@/components/ui/Skeleton';
 import { adminApi } from '@/lib/api/admin';
 import { AdminGuard } from '@/components/guards/AdminGuard';
+
+// Helper function to extract port from URL
+const extractPortFromUrl = (url: string): number => {
+  try {
+    const urlObj = new URL(url);
+    return parseInt(urlObj.port) || (urlObj.protocol === 'https:' ? 443 : 80);
+  } catch {
+    return 0;
+  }
+};
 
 function ServicesContent() {
   const { data: services, isLoading, refetch } = useQuery({
@@ -30,16 +38,14 @@ function ServicesContent() {
     return <PageSkeleton />;
   }
 
-  const serviceList = services || [
-    { name: 'API Gateway', status: 'healthy', port: 3000, uptime: '99.9%', responseTime: '45ms' },
-    { name: 'Auth Service', status: 'healthy', port: 3001, uptime: '99.8%', responseTime: '32ms' },
-    { name: 'Service Registry', status: 'healthy', port: 3002, uptime: '99.9%', responseTime: '28ms' },
-    { name: 'Healthcare', status: 'healthy', port: 3003, uptime: '99.7%', responseTime: '52ms' },
-    { name: 'Agriculture', status: 'healthy', port: 3004, uptime: '99.5%', responseTime: '48ms' },
-    { name: 'Urban', status: 'healthy', port: 3005, uptime: '99.6%', responseTime: '41ms' },
-    { name: 'Notification', status: 'degraded', port: 3006, uptime: '98.2%', responseTime: '120ms' },
-    { name: 'Audit', status: 'healthy', port: 3007, uptime: '99.9%', responseTime: '35ms' },
-  ];
+  // Map backend service data to UI format
+  const serviceList = services?.map((service: any) => ({
+    name: service.displayName || service.name,
+    status: service.healthStatus.toLowerCase(), // "HEALTHY" -> "healthy"
+    port: extractPortFromUrl(service.baseUrl),
+    uptime: 'N/A', // Not available in current backend schema
+    responseTime: 'N/A', // Not available in current backend schema
+  })) || [];
 
   const healthyCount = serviceList.filter((s: { status: string }) => s.status === 'healthy').length;
   const degradedCount = serviceList.filter((s: { status: string }) => s.status === 'degraded').length;
@@ -175,54 +181,6 @@ function ServicesContent() {
         </CardContent>
       </Card>
 
-      {/* System Resources */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Cpu size={20} className="text-blue-600" />
-              CPU Usage
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <div className="flex justify-between text-sm mb-2">
-                  <span className="text-slate-500">Current</span>
-                  <span className="font-medium text-slate-900">45%</span>
-                </div>
-                <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-blue-500 rounded-full w-[45%]" />
-                </div>
-              </div>
-              <p className="text-xs text-slate-500">Average over last hour: 42%</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <HardDrive size={20} className="text-green-600" />
-              Memory Usage
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <div className="flex justify-between text-sm mb-2">
-                  <span className="text-slate-500">Current</span>
-                  <span className="font-medium text-slate-900">62%</span>
-                </div>
-                <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-green-500 rounded-full w-[62%]" />
-                </div>
-              </div>
-              <p className="text-xs text-slate-500">4.8 GB / 8 GB used</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
     </div>
   );
 }
