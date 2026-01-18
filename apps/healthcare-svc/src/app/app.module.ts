@@ -11,6 +11,7 @@ import { DoctorsModule } from '../modules/doctors/doctors.module';
 import { AppointmentsModule } from '../modules/appointments/appointments.module';
 import { HealthModule } from '../modules/health/health.module';
 import { AuthModule } from '../modules/auth/auth.module';
+import { AdminAppointmentsModule } from '../modules/admin-appointments/admin-appointments.module';
 
 /**
  * Healthcare Service Module
@@ -53,6 +54,7 @@ import { AuthModule } from '../modules/auth/auth.module';
     HospitalsModule,
     DoctorsModule,
     AppointmentsModule,
+    AdminAppointmentsModule,
     HealthModule,
   ],
   providers: [
@@ -66,4 +68,4 @@ import { AuthModule } from '../modules/auth/auth.module';
     },
   ],
 })
-export class AppModule {}
+export class AppModule { }

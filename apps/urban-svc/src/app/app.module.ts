@@ -10,6 +10,7 @@ import { CategoriesModule } from '../modules/categories/categories.module';
 import { GrievancesModule } from '../modules/grievances/grievances.module';
 import { HealthModule } from '../modules/health/health.module';
 import { AuthModule } from '../modules/auth/auth.module';
+import { AdminGrievancesModule } from '../modules/admin-grievances/admin-grievances.module';
 
 /**
  * Urban Service Module
@@ -50,6 +51,7 @@ import { AuthModule } from '../modules/auth/auth.module';
     AuthModule,
     CategoriesModule,
     GrievancesModule,
+    AdminGrievancesModule,
     HealthModule,
   ],
   providers: [
@@ -63,4 +65,4 @@ import { AuthModule } from '../modules/auth/auth.module';
     },
   ],
 })
-export class AppModule {}
+export class AppModule { }

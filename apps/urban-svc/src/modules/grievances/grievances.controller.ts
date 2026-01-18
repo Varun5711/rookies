@@ -7,16 +7,18 @@ import {
   Put,
   Query,
   ParseUUIDPipe,
+  UseGuards,
 } from '@nestjs/common';
 import { GrievancesService } from './grievances.service';
 import { CreateGrievanceDto } from './dto/create-grievance.dto';
 import { QueryGrievanceDto } from './dto/query-grievance.dto';
 import { EscalateGrievanceDto } from './dto/escalate-grievance.dto';
-import { GetCurrentUser, CurrentUser } from '@dpi/common';
+import { GetCurrentUser, CurrentUser, PreventAdminAsUserGuard } from '@dpi/common';
 
+@UseGuards(PreventAdminAsUserGuard)
 @Controller('grievances')
 export class GrievancesController {
-  constructor(private readonly grievancesService: GrievancesService) {}
+  constructor(private readonly grievancesService: GrievancesService) { }
 
   @Post()
   create(

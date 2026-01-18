@@ -35,7 +35,7 @@ curl -s -X POST "$REGISTRY_URL" \
     "name": "agriculture",
     "displayName": "Agriculture Service",
     "description": "Agricultural platform for crop advisories, government schemes, and market prices",
-    "baseUrl": "http://localhost:3011",
+    "baseUrl": "http://localhost:3009",
     "healthEndpoint": "/api/health",
     "status": "active",
     "version": "1.0.0",
@@ -54,13 +54,32 @@ curl -s -X POST "$REGISTRY_URL" \
     "name": "urban",
     "displayName": "Urban Services",
     "description": "Urban civic services platform for grievance redressal and city services",
-    "baseUrl": "http://localhost:3012",
+    "baseUrl": "http://localhost:3007",
     "healthEndpoint": "/api/health",
     "status": "active",
     "version": "1.0.0",
     "tags": ["urban", "civic", "grievances", "city-services"],
     "isPublic": false,
     "requiredRoles": ["citizen", "admin"]
+  }' | jq .
+
+echo ""
+
+# Analytics Service
+echo "Registering Analytics Service..."
+curl -s -X POST "$REGISTRY_URL" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "analytics",
+    "displayName": "Analytics Service",
+    "description": "Platform analytics and dashboard data aggregation service",
+    "baseUrl": "http://localhost:3011",
+    "healthEndpoint": "/api/health",
+    "status": "active",
+    "version": "1.0.0",
+    "tags": ["analytics", "dashboard", "admin", "monitoring"],
+    "isPublic": false,
+    "requiredRoles": ["platform_admin"]
   }' | jq .
 
 echo ""

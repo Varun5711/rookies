@@ -126,21 +126,21 @@ export class OtpService {
 
   /**
    * Increment rate limit counter
+   * Uses raw Redis client to avoid JSON serialization for counters
    */
   private async incrementRateLimit(mobile: string): Promise<void> {
     const rateLimitKey = `otp:ratelimit:${mobile}`;
-    const currentCount = await this.redisService.get(rateLimitKey);
+    const client = this.redisService.getClient();
+
+    // Use raw Redis operations for counter management
+    const currentCount = await client.get(rateLimitKey);
 
     if (!currentCount) {
-      // First request - set counter with TTL
-      await this.redisService.set(
-        rateLimitKey,
-        '1',
-        this.OTP_RATE_LIMIT_WINDOW
-      );
+      // First request - set counter with TTL (raw integer, no JSON)
+      await client.setex(rateLimitKey, this.OTP_RATE_LIMIT_WINDOW, '1');
     } else {
       // Increment counter
-      await this.redisService.incr(rateLimitKey);
+      await client.incr(rateLimitKey);
     }
   }
 }

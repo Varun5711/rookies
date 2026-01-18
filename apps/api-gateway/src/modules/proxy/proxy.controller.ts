@@ -8,11 +8,12 @@ import {
   HttpStatus,
   Logger,
   UseGuards,
+  ForbiddenException,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { ProxyService } from './proxy.service';
 import { ServiceRegistryClient } from './service-registry.client';
-import { CurrentUser, Public } from '@dpi/common';
+import { CurrentUser, Public, UserRole } from '@dpi/common';
 import { OptionalJwtAuthGuard } from '../../guards/optional-jwt-auth.guard';
 
 /**
@@ -42,7 +43,7 @@ export class ProxyController {
   constructor(
     private readonly proxyService: ProxyService,
     private readonly registryClient: ServiceRegistryClient,
-  ) {}
+  ) { }
 
   /**
    * Handle requests to /api/services/:serviceName (root path)
@@ -54,6 +55,29 @@ export class ProxyController {
     @Res() res: Response,
   ) {
     return this.handleProxyRequest(serviceName, '', req, res);
+  }
+
+  /**
+   * Handle requests to /api/services/:serviceName/admin/*
+   * Enforces PLATFORM_ADMIN role for all admin routes
+   */
+  @All(':serviceName/admin/*')
+  async proxyAdminRequest(
+    @Param('serviceName') serviceName: string,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
+    // Extract admin path
+    const pathMatch = req.url.match(/^\/api\/services\/[^\/]+\/admin\/(.+?)(?:\?|$)/);
+    const adminPath = pathMatch ? pathMatch[1] : '';
+
+    // Verify admin role
+    const user = (req as any).user as CurrentUser | undefined;
+    if (!user || !user.roles.includes(UserRole.PLATFORM_ADMIN)) {
+      throw new ForbiddenException('Admin access required');
+    }
+
+    return this.handleProxyRequest(serviceName, `admin/${adminPath}`, req, res);
   }
 
   /**

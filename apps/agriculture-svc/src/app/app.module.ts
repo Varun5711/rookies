@@ -11,6 +11,7 @@ import { SchemesModule } from '../modules/schemes/schemes.module';
 import { MarketPricesModule } from '../modules/market-prices/market-prices.module';
 import { HealthModule } from '../modules/health/health.module';
 import { AuthModule } from '../modules/auth/auth.module';
+import { AdminSchemesModule } from '../modules/admin-schemes/admin-schemes.module';
 
 /**
  * Agriculture Service Module
@@ -51,6 +52,7 @@ import { AuthModule } from '../modules/auth/auth.module';
     AuthModule,
     AdvisoriesModule,
     SchemesModule,
+    AdminSchemesModule,
     MarketPricesModule,
     HealthModule,
   ],
@@ -65,4 +67,4 @@ import { AuthModule } from '../modules/auth/auth.module';
     },
   ],
 })
-export class AppModule {}
+export class AppModule { }
