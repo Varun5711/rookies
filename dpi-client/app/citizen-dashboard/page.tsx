@@ -151,7 +151,7 @@ const CitizenDashboard: React.FC = () => {
                     PS
                   </div>
                   <div className="hidden sm:flex items-center gap-1">
-                    <span className="text-sm font-medium">Priya Sharma</span>
+                    <span className="text-sm font-medium">Team Rookies</span>
                     <ChevronDown size={14} className={`text-slate-400 transition-transform ${isProfileOpen ? 'rotate-180' : ''}`} />
                   </div>
                 </div>
@@ -179,7 +179,7 @@ const CitizenDashboard: React.FC = () => {
         {/* --- Welcome Section --- */}
         <section className="flex flex-col md:flex-row justify-between md:items-end gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900 mb-2">Welcome, Priya Sharma</h1>
+            <h1 className="text-3xl font-bold text-slate-900 mb-2">Welcome, Team Rookies</h1>
             <p className="text-slate-500 max-w-xl">
               Access your government services, track application status, and manage your certificates securely in one place.
             </p>

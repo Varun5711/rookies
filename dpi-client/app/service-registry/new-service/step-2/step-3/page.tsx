@@ -1,23 +1,25 @@
 "use client"
-import React from 'react';
-import { 
-  ArrowLeft, 
-  Info, 
-  Server, 
-  Shield, 
-  Edit2, 
-  Rocket, 
-  Save, 
-  Eye, 
-  Lock, 
-  Plane, 
-  Bell, 
+import {
+  ArrowLeft,
+  Info,
+  Server,
+  Shield,
+  Edit2,
+  Rocket,
+  Save,
+  Eye,
+  Lock,
+  Plane,
+  Bell,
   Landmark,
   CheckCircle2,
   ExternalLink
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-
+import Image from 'next/image';
+import { NotificationDropdown } from '../../../../lib/NotificationDropdown';
+import { SettingsDropdown } from '../../../../lib/SettingsDropdown';
+import ModiImage from '@/app/modi.png';
 const ReviewService: React.FC = () => {
     const router = useRouter();
   return (
@@ -28,24 +30,27 @@ const ReviewService: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-2">
-              <div className="bg-blue-600 text-white p-1.5 rounded-lg">
+              <div className="bg-blue-700 text-white p-1.5 rounded-lg">
                 <Landmark size={20} />
               </div>
               <span className="font-bold text-lg tracking-tight">BharatSetu</span>
             </div>
             
-            <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
-              <a href="#" className="hover:text-blue-700">Dashboard</a>
-              <a href="#" className="text-blue-700 font-semibold">Registry</a>
-              <a href="#" className="hover:text-blue-700">Audit Logs</a>
-            </nav>
-
             <div className="flex items-center gap-4">
-              <button className="text-slate-500 hover:text-blue-700">
-                <Bell size={20} />
-              </button>
-              <div className="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center border border-teal-200 text-teal-700 font-bold text-xs">
-                JD
+              <NotificationDropdown />
+              <SettingsDropdown />
+              <div className="flex items-center gap-3 pl-4 border-l border-slate-200">
+                <div className="text-right hidden sm:block">
+                  <p className="text-sm font-bold text-slate-900">Setu User</p>
+                  <p className="text-xs text-slate-500">Admin</p>
+                </div>
+                <div className="w-9 h-9 rounded-full bg-slate-200 overflow-hidden border border-slate-300">
+                   <Image 
+                     src={ModiImage} 
+                     alt="Profile" 
+                     className="w-full h-full object-cover"
+                   />
+                </div>
               </div>
             </div>
           </div>

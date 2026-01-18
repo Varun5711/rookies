@@ -23,8 +23,13 @@ import {
   Wallet,
   FolderLock,
   PenTool,
-  Syringe
+  Syringe,
+  ScrollText,
+  FileBarChart,
 } from 'lucide-react';
+import { Sidebar } from '../lib/Sidebar';
+import { NotificationDropdown } from '../lib/NotificationDropdown';
+import { SettingsDropdown } from '../lib/SettingsDropdown';
 
 // --- Types & Mock Data ---
 
@@ -104,50 +109,7 @@ const ServiceRegistry: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-900 flex">
       
-      {/* --- Sidebar --- */}
-      <aside className="w-64 bg-white border-r border-slate-200 fixed h-full hidden md:flex flex-col z-20">
-        
-        {/* Logo Area */}
-        <div className="h-20 flex items-center gap-3 px-6 border-b border-slate-100">
-          <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center text-blue-700">
-             <ShieldCheck size={24} fill="currentColor" className="text-blue-700/20" />
-          </div>
-          <div>
-            <h1 className="font-bold text-slate-900 leading-tight">BharatSetu</h1>
-          </div>
-        </div>
-
-        {/* Navigation */}
-        <div className="flex-1 py-6 px-4 overflow-y-auto">
-          
-          <div className="mb-6">
-            <p className="px-4 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Core Modules</p>
-            <nav className="space-y-0.5">
-              <NavItem icon={<LayoutDashboard size={18} />} label="Dashboard" />
-              <NavItem icon={<Server size={18} />} label="Service Registry" active />
-              <NavItem icon={<Users size={18} />} label="User Management" />
-              <NavItem icon={<ShieldCheck size={18} />} label="Access Control" />
-            </nav>
-          </div>
-
-          <div>
-            <p className="px-4 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">System Health</p>
-            <nav className="space-y-0.5">
-              <NavItem icon={<BarChart3 size={18} />} label="Analytics" />
-              <NavItem icon={<FileText size={18} />} label="Audit Logs" />
-              <NavItem icon={<Activity size={18} />} label="System Status" />
-            </nav>
-          </div>
-        </div>
-
-        {/* Bottom Actions */}
-        <div className="p-4 border-t border-slate-100">
-          <button className="flex items-center gap-3 px-4 py-2 w-full text-slate-500 hover:text-blue-700 transition-colors text-sm font-medium">
-            <HelpCircle size={18} />
-            Support
-          </button>
-        </div>
-      </aside>
+      <Sidebar activePage="service-registry" />
 
       {/* --- Main Content --- */}
       <div className="flex-1 md:ml-64 flex flex-col min-h-screen">
@@ -156,7 +118,7 @@ const ServiceRegistry: React.FC = () => {
         <header className="h-16 bg-white border-b border-slate-200 sticky top-0 z-10 px-6 lg:px-8 flex justify-between items-center">
           
           {/* Search (Global) */}
-          <div className="relative w-96 hidden lg:block">
+          <div className="relative flex-1 max-w-lg">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
             <input 
               type="text" 
@@ -167,20 +129,15 @@ const ServiceRegistry: React.FC = () => {
 
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-3 border-r border-slate-200 pr-6">
-              <button className="relative text-slate-500 hover:text-blue-700">
-                <Bell size={20} />
-                <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full border border-white"></span>
-              </button>
-              <button className="text-slate-500 hover:text-blue-700">
-                <Settings size={20} />
-              </button>
+              <NotificationDropdown />
+              <SettingsDropdown />
             </div>
 
             {/* Profile */}
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-orange-100 border border-orange-200"></div>
               <div className="hidden md:block">
-                <p className="text-sm font-bold text-slate-900">Admin User</p>
+                <p className="text-sm font-bold text-slate-900">Setu User</p>
                 <p className="text-xs text-slate-500">System Administrator</p>
               </div>
             </div>
@@ -356,17 +313,6 @@ const ServiceRegistry: React.FC = () => {
 };
 
 // --- Helper Components ---
-
-const NavItem = ({ icon, label, active = false }: { icon: React.ReactNode, label: string, active?: boolean }) => (
-  <button className={`flex items-center gap-3 px-4 py-2.5 w-full rounded-lg transition-colors text-sm font-medium ${
-    active 
-      ? 'bg-blue-50 text-blue-700 font-semibold' 
-      : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
-  }`}>
-    {icon}
-    {label}
-  </button>
-);
 
 const StatCard = ({ label, value, trend, trendUp, icon, bgColor, iconBg, isNeutral }: any) => (
   <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden">

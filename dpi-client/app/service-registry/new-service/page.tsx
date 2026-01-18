@@ -10,6 +10,10 @@ import {
   Briefcase
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import { NotificationDropdown } from '../../lib/NotificationDropdown';
+import { SettingsDropdown } from '../../lib/SettingsDropdown';
+import ModiImage from '@/app/modi.png';
 
 const RegisterNewService: React.FC = () => {
   const [description, setDescription] = useState('');
@@ -31,17 +35,16 @@ const RegisterNewService: React.FC = () => {
             </div>
             
             <div className="flex items-center gap-4">
-              <button className="text-slate-500 hover:text-blue-700">
-                <Bell size={20} />
-              </button>
+              <NotificationDropdown />
+              <SettingsDropdown />
               <div className="flex items-center gap-3 pl-4 border-l border-slate-200">
                 <div className="text-right hidden sm:block">
-                  <p className="text-sm font-bold text-slate-900">Sarah Jenkins</p>
+                  <p className="text-sm font-bold text-slate-900">Setu User</p>
                   <p className="text-xs text-slate-500">Admin</p>
                 </div>
                 <div className="w-9 h-9 rounded-full bg-slate-200 overflow-hidden border border-slate-300">
-                   <img 
-                     src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200" 
+                   <Image 
+                     src={ModiImage} 
                      alt="Profile" 
                      className="w-full h-full object-cover"
                    />
